@@ -46,7 +46,7 @@ export interface GridLayout {
   gap: number
   fit: FitMode
   /**
-   * true 면 출력 크기를 첫 이미지 원본 크기 × 그리드 기준으로 자동 계산한다.
+   * true 면 출력 크기를 그리드 첫 배치 셀 이미지의 원본 크기 × 그리드 기준으로 자동 계산한다.
    * 사용자가 출력 px 를 직접 지정하면 false 로 고정된다.
    */
   autoSize: boolean

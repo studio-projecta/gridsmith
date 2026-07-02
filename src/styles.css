@@ -218,6 +218,124 @@ select {
   background: var(--surface);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.export-modal {
+  width: 340px;
+  max-width: 100%;
+}
+
+.export-modal h3 {
+  margin: 0 0 12px;
+}
+
+.export-preview {
+  width: 100%;
+  max-height: 320px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.export-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.export-figure {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+.export-figure .export-preview {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* 치수선: 모서리가 둥근 브레이스(곡선)로 변을 감싸고 값을 옆에 둔다(가로변=너비, 세로변=높이). */
+.dim {
+  display: flex;
+  align-items: center;
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dim-label {
+  padding: 0 4px;
+}
+
+.dim-brace {
+  border: 1.5px solid var(--border-strong);
+}
+
+.dim-h {
+  grid-column: 2;
+  grid-row: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dim-brace-h {
+  width: 100%;
+  height: 7px;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.dim-v {
+  grid-column: 1;
+  grid-row: 2;
+  gap: 3px;
+}
+
+.dim-brace-v {
+  height: 100%;
+  width: 7px;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn-ghost {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
 .export-btn {
   background: var(--success) !important;
   color: #fff;
@@ -327,7 +445,8 @@ select {
   box-shadow: var(--shadow-md);
 }
 
-.grid-container.transparent-bg {
+.grid-container.transparent-bg,
+.export-preview.transparent-bg {
   background-color: #fff;
   background-image: linear-gradient(45deg, #d7dbe2 25%, transparent 25%),
     linear-gradient(-45deg, #d7dbe2 25%, transparent 25%),
@@ -515,28 +634,6 @@ select {
   color: var(--muted);
   margin: 2px 0 0;
   line-height: 1.4;
-}
-
-.presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.presets button {
-  padding: 6px 9px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text-2);
-  font-size: 12px;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.presets button:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
-  color: var(--accent);
 }
 
 /* ---- sidebar ---- */

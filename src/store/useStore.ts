@@ -13,12 +13,16 @@ import * as db from '../db/idb'
 const LAST_TYPE_KEY = 'gridsmith:lastTypeId'
 
 /**
- * autoSize 가 켜져 있으면 출력 px 를 첫 이미지 원본 크기 × 그리드 기준으로 맞춘다.
+ * autoSize 가 켜져 있으면 출력 px 를 그리드에 배치된(읽기순서상 첫) 셀 이미지의
+ * 원본 크기 × 그리드 기준으로 맞춘다. 배치된 이미지가 없으면 그대로 둔다.
  * 변경이 없으면 원본 layout 을 그대로 반환(불필요한 저장/렌더 방지).
  */
 function withAutoSize(layout: GridLayout, images: StoredImage[]): GridLayout {
-  if (layout.autoSize === false || images.length === 0) return layout
-  const img = images[0]
+  if (layout.autoSize === false) return layout
+  const firstSlot = layout.cells.find((c) => c != null)
+  if (!firstSlot) return layout
+  const img = images.find((i) => i.id === firstSlot.imageId)
+  if (!img) return layout
   const { outputWidth, outputHeight } = computeAutoOutput(
     layout.rows,
     layout.cols,
@@ -185,15 +189,7 @@ export const useStore = create<StoreState>((set, get) => ({
       const images = [...s.images, ...added]
       const urls = { ...s.urls }
       for (const img of added) urls[img.id] = URL.createObjectURL(img.blob)
-      let layout = s.layout
-      if (layout) {
-        const next = withAutoSize(layout, images)
-        if (next !== layout) {
-          layout = next
-          persistLayout(next)
-        }
-      }
-      return { images, urls, layout }
+      return { images, urls }
     })
   },
 
@@ -204,7 +200,7 @@ export const useStore = create<StoreState>((set, get) => ({
       if (url) URL.revokeObjectURL(url)
       const { [id]: _removed, ...urls } = s.urls
       const images = s.images.filter((i) => i.id !== id)
-      // 삭제된 이미지를 참조하던 셀 비우고, autoSize 면 새 첫 이미지 기준으로 출력 크기 갱신.
+      // 삭제된 이미지를 참조하던 셀 비우고, autoSize 면 첫 배치 셀 기준으로 출력 크기 갱신.
       let layout = s.layout
       if (layout) {
         const cells = layout.cells.map((c) => (c?.imageId === id ? null : c))
@@ -249,7 +245,7 @@ export const useStore = create<StoreState>((set, get) => ({
     if (!layout) return
     const cells = layout.cells.slice()
     cells[index] = slot
-    const next = { ...layout, cells }
+    const next = withAutoSize({ ...layout, cells }, get().images)
     persistLayout(next)
     set({ layout: next })
   },
@@ -261,7 +257,7 @@ export const useStore = create<StoreState>((set, get) => ({
     const cells = layout.cells.slice()
     const [moved] = cells.splice(from, 1)
     cells.splice(to, 0, moved)
-    const next = { ...layout, cells }
+    const next = withAutoSize({ ...layout, cells }, get().images)
     persistLayout(next)
     set({ layout: next })
   },
@@ -293,7 +289,7 @@ export const useStore = create<StoreState>((set, get) => ({
       cells[i] = { imageId: available[k].id, transform: { ...DEFAULT_TRANSFORM } }
       k++
     }
-    const next = { ...layout, cells }
+    const next = withAutoSize({ ...layout, cells }, images)
     persistLayout(next)
     set({ layout: next })
   },

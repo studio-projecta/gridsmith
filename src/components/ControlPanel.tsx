@@ -2,13 +2,6 @@ import { useStore } from '../store/useStore'
 import { clamp } from '../lib/layout'
 import { DEFAULT_TRANSFORM } from '../types'
 
-const SIZE_PRESETS = [
-  { label: '정사각 1500', w: 1500, h: 1500 },
-  { label: '정사각 3000', w: 3000, h: 3000 },
-  { label: 'FHD 1920×1080', w: 1920, h: 1080 },
-  { label: 'A4세로 2480×3508', w: 2480, h: 3508 },
-]
-
 export default function ControlPanel() {
   const layout = useStore((s) => s.layout)
   const setGridSize = useStore((s) => s.setGridSize)
@@ -142,55 +135,12 @@ export default function ControlPanel() {
             checked={layout.autoSize}
             onChange={(e) => setAutoSize(e.target.checked)}
           />
-          첫 이미지 크기로 자동 맞춤
+          첫 배치 이미지 크기로 자동 맞춤
         </label>
-        {layout.autoSize && (
-          <p className="hint">셀이 첫 이미지 원본 크기가 되도록 출력 크기가 자동 계산됩니다.</p>
-        )}
-        <div className="field">
-          <label>가로 (px)</label>
-          <input
-            type="number"
-            min={1}
-            max={12000}
-            value={layout.outputWidth}
-            disabled={layout.autoSize}
-            onChange={(e) =>
-              updateLayout({
-                outputWidth: clamp(Number(e.target.value) || 1, 1, 12000),
-                autoSize: false,
-              })
-            }
-          />
-        </div>
-        <div className="field">
-          <label>세로 (px)</label>
-          <input
-            type="number"
-            min={1}
-            max={12000}
-            value={layout.outputHeight}
-            disabled={layout.autoSize}
-            onChange={(e) =>
-              updateLayout({
-                outputHeight: clamp(Number(e.target.value) || 1, 1, 12000),
-                autoSize: false,
-              })
-            }
-          />
-        </div>
-        <div className="presets">
-          {SIZE_PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() =>
-                updateLayout({ outputWidth: p.w, outputHeight: p.h, autoSize: false })
-              }
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <p className="hint">
+          현재 구성 {layout.outputWidth}×{layout.outputHeight} px (비율 유지).
+          최종 해상도는 내보낼 때 지정합니다.
+        </p>
       </section>
 
       <section>
