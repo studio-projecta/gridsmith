@@ -134,9 +134,9 @@ export default function GridCell({
           ref={setDragRef}
           {...(reorder ? listeners : {})}
           {...(reorder ? attributes : {})}
-          onPointerDown={adjust ? onPanDown : undefined}
-          onPointerMove={adjust ? onPanMove : undefined}
-          onPointerUp={adjust ? onPanUp : undefined}
+          {...(adjust
+            ? { onPointerDown: onPanDown, onPointerMove: onPanMove, onPointerUp: onPanUp }
+            : {})}
         >
           <img src={url} alt="" draggable={false} style={imgStyle ?? undefined} />
         </div>
