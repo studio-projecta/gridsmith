@@ -7,7 +7,7 @@ import type {
   EditMode,
   CellTransform,
 } from '../types'
-import { DEFAULT_TRANSFORM, makeDefaultLayout, resizeCells, computeAutoOutput } from '../types'
+import { DEFAULT_TRANSFORM, makeDefaultLayout, reflowCells, computeAutoOutput } from '../types'
 import * as db from '../db/idb'
 
 const LAST_TYPE_KEY = 'gridsmith:lastTypeId'
@@ -237,8 +237,9 @@ export const useStore = create<StoreState>((set, get) => ({
   setGridSize: (rows, cols) => {
     const layout = get().layout
     if (!layout) return
-    const cells = resizeCells(layout.cells, layout.cols, rows, cols)
-    const next = withAutoSize({ ...layout, rows, cols, cells }, get().images)
+    // 읽기순서 기준 리플로우 + 배치 이미지가 모두 담기도록 행 자동 확장(이미지 유실 방지).
+    const { rows: finalRows, cells } = reflowCells(layout.cells, rows, cols)
+    const next = withAutoSize({ ...layout, rows: finalRows, cols, cells }, get().images)
     persistLayout(next)
     set({ layout: next, selectedCell: null })
   },

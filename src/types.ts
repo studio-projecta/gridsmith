@@ -90,19 +90,22 @@ export function computeAutoOutput(
   }
 }
 
-/** rows/cols 변경 시 기존 셀 내용을 최대한 보존하며 배열 크기를 재조정. */
-export function resizeCells(
+/**
+ * rows/cols 변경 시 셀 내용을 읽기순서(행 우선, 선형 인덱스) 기준으로 리플로우한다.
+ * 열을 줄이면 넘치는 항목이 다음 줄로 밀리고, 늘리면 위로 당겨진다.
+ * 배치된 이미지가 모두 담기도록 필요하면 행 수를 늘려(never-lose) requestedRows 를 상한이 아닌 하한으로 취급한다.
+ */
+export function reflowCells(
   cells: (CellSlot | null)[],
-  oldCols: number,
-  newRows: number,
+  requestedRows: number,
   newCols: number,
-): (CellSlot | null)[] {
-  const next: (CellSlot | null)[] = new Array(newRows * newCols).fill(null)
-  const oldRows = oldCols > 0 ? Math.ceil(cells.length / oldCols) : 0
-  for (let r = 0; r < Math.min(oldRows, newRows); r++) {
-    for (let c = 0; c < Math.min(oldCols, newCols); c++) {
-      next[r * newCols + c] = cells[r * oldCols + c] ?? null
-    }
-  }
-  return next
+): { rows: number; cells: (CellSlot | null)[] } {
+  let lastFilled = -1
+  for (let i = 0; i < cells.length; i++) if (cells[i]) lastFilled = i
+  const neededRows = lastFilled >= 0 ? Math.floor(lastFilled / newCols) + 1 : 0
+  const rows = Math.max(1, requestedRows, neededRows)
+  const size = rows * newCols
+  const next: (CellSlot | null)[] = new Array(size).fill(null)
+  for (let i = 0; i < Math.min(cells.length, size); i++) next[i] = cells[i] ?? null
+  return { rows, cells: next }
 }

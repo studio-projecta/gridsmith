@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { cellRect, imageRect, clamp, type Rect } from '../src/lib/layout'
-import { computeAutoOutput } from '../src/types'
-import type { GridLayout, CellTransform } from '../src/types'
+import { computeAutoOutput, reflowCells } from '../src/types'
+import type { GridLayout, CellTransform, CellSlot } from '../src/types'
 
 function layout(patch: Partial<GridLayout>): GridLayout {
   return {
@@ -99,6 +99,42 @@ test.describe('computeAutoOutput', () => {
     const c0 = cellRect(L, 0)
     expect(c0.w).toBeCloseTo(120, 5)
     expect(c0.h).toBeCloseTo(90, 5)
+  })
+})
+
+test.describe('reflowCells', () => {
+  const slot = (id: string): CellSlot => ({ id } as unknown as CellSlot)
+  const ids = (cells: (CellSlot | null)[]) =>
+    cells.map((c) => (c ? (c as unknown as { id: string }).id : null))
+
+  test('열 축소: 넘치는 항목이 다음 줄로 밀리고 행이 늘어남(유실 없음)', () => {
+    const cells = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(slot) // 2x5
+    const r = reflowCells(cells, 2, 3)
+    expect(r.rows).toBe(4) // ceil(10/3)
+    expect(r.cells).toHaveLength(12)
+    expect(ids(r.cells)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', null, null])
+  })
+
+  test('열 확대: 위로 당겨지고 행이 필요한 만큼으로 복귀', () => {
+    const cells = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map(slot)
+    const back = reflowCells(cells, 2, 5) // 요청 2행
+    expect(back.rows).toBe(2)
+    expect(back.cells).toHaveLength(10)
+    expect(ids(back.cells)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'])
+  })
+
+  test('중간 빈칸은 선형 순서로 보존', () => {
+    const cells = [slot('a'), null, slot('b')] // 1x3
+    const r = reflowCells(cells, 1, 2)
+    expect(r.rows).toBe(2)
+    expect(ids(r.cells)).toEqual(['a', null, 'b', null])
+  })
+
+  test('요청 행이 부족해도 이미지 담기게 행 확장', () => {
+    const cells = ['0', '1', '2', '3', '4', '5'].map(slot)
+    const r = reflowCells(cells, 1, 2) // 1행 요청, 6개
+    expect(r.rows).toBe(3)
+    expect(ids(r.cells)).toEqual(['0', '1', '2', '3', '4', '5'])
   })
 })
 
