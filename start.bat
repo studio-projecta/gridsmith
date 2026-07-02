@@ -32,6 +32,8 @@ if errorlevel 1 goto :error
 echo.
 
 echo [3/3] Starting server ^(LAN accessible^)...
+echo   Freeing port 4173 if already in use...
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr LISTENING ^| findstr :4173') do taskkill /F /PID %%p >nul 2>nul
 echo.
 echo   Local:   http://localhost:4173
 echo   Network: http://^<this-PC-IP^>:4173   ^(run "ipconfig" to find the IP^)
