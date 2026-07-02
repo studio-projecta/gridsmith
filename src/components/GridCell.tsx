@@ -47,7 +47,7 @@ export default function GridCell({
 
   let imgStyle: React.CSSProperties | null = null
   if (image && slot) {
-    const ir = imageRect(cell, image.width, image.height, layout.fit, slot.transform)
+    const ir = imageRect(cell, image.width, image.height, layout.fit, slot.transform, layout.align)
     imgStyle = {
       position: 'absolute',
       left: `${((ir.x - cell.x) / cell.w) * 100}%`,

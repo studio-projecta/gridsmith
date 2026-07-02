@@ -1,5 +1,6 @@
 import { useStore } from '../store/useStore'
 import { clamp } from '../lib/layout'
+import type { VAlign } from '../types'
 
 export default function ControlPanel() {
   const layout = useStore((s) => s.layout)
@@ -57,6 +58,17 @@ export default function ControlPanel() {
           >
             <option value="cover">채우기 (cover)</option>
             <option value="contain">맞추기 (contain)</option>
+          </select>
+        </div>
+        <div className="field">
+          <label>세로 정렬</label>
+          <select
+            value={layout.align ?? 'center'}
+            onChange={(e) => updateLayout({ align: e.target.value as VAlign })}
+          >
+            <option value="top">상단</option>
+            <option value="center">중앙</option>
+            <option value="bottom">하단</option>
           </select>
         </div>
       </section>

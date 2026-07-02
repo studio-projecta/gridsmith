@@ -29,6 +29,8 @@ export interface CellSlot {
 }
 
 export type FitMode = 'cover' | 'contain'
+/** 셀 안 이미지의 세로 정렬(전체 셀 일괄 적용). */
+export type VAlign = 'top' | 'center' | 'bottom'
 
 /** 유형당 1개. cells 길이 = rows*cols, 행 우선(row-major). */
 export interface GridLayout {
@@ -44,6 +46,8 @@ export interface GridLayout {
   /** 셀 간격(출력 px 기준). 바깥 여백에도 동일 적용. */
   gap: number
   fit: FitMode
+  /** 셀 안 이미지의 세로 정렬. 없으면 'center'(과거 레이아웃 호환). */
+  align?: VAlign
   /**
    * true 면 출력 크기를 그리드 첫 배치 셀 이미지의 원본 크기 × 그리드 기준으로 자동 계산한다.
    * 사용자가 출력 px 를 직접 지정하면 false 로 고정된다.
@@ -71,6 +75,7 @@ export function makeDefaultLayout(typeId: string): GridLayout {
     outputHeight: 1500,
     gap: 0,
     fit: 'cover',
+    align: 'center',
     autoSize: true,
   }
 }

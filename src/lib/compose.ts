@@ -34,7 +34,7 @@ export async function composeToBlob(
 
     const bitmap = await createImageBitmap(meta.blob)
     const cell = cellRect(layout, i)
-    const ir = imageRect(cell, meta.width, meta.height, layout.fit, slot.transform)
+    const ir = imageRect(cell, meta.width, meta.height, layout.fit, slot.transform, layout.align)
 
     ctx.save()
     ctx.beginPath()
