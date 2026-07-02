@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.DS_Store
+
+# playwright
+test-results
+playwright-report
+tsconfig.tsbuildinfo
