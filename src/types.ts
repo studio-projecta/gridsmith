@@ -9,6 +9,8 @@ export interface StoredImage {
   typeId: string
   name: string
   blob: Blob
+  /** 에디터 미리보기용 다운스케일 썸네일. 원본은 blob(내보내기 품질용). 과거 이미지엔 없을 수 있음. */
+  thumbBlob?: Blob
   width: number
   height: number
 }

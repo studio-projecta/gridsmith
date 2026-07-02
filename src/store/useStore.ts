@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { GroupType, StoredImage, GridLayout, CellSlot } from '../types'
 import { DEFAULT_TRANSFORM, makeDefaultLayout, reflowCells, computeAutoOutput } from '../types'
+import { decodeMeta } from '../lib/thumb'
 import * as db from '../db/idb'
 
 const LAST_TYPE_KEY = 'gridsmith:lastTypeId'
@@ -73,16 +74,30 @@ function persistLayout(layout: GridLayout) {
   }, 300)
 }
 
-async function decodeSize(blob: Blob): Promise<{ width: number; height: number }> {
-  const bitmap = await createImageBitmap(blob)
-  const size = { width: bitmap.width, height: bitmap.height }
-  bitmap.close()
-  return size
+/** 썸네일이 없는(과거) 이미지에 썸네일을 생성·저장해 채워준다. */
+async function ensureThumbs(images: StoredImage[]): Promise<StoredImage[]> {
+  const out: StoredImage[] = []
+  for (const img of images) {
+    if (img.thumbBlob) {
+      out.push(img)
+      continue
+    }
+    try {
+      const { thumbBlob } = await decodeMeta(img.blob)
+      const updated = { ...img, thumbBlob }
+      await db.putImage(updated)
+      out.push(updated)
+    } catch {
+      out.push(img) // 디코드 실패 시 원본 그대로(폴백).
+    }
+  }
+  return out
 }
 
 function buildUrls(images: StoredImage[]): Record<string, string> {
   const urls: Record<string, string> = {}
-  for (const img of images) urls[img.id] = URL.createObjectURL(img.blob)
+  // 미리보기는 썸네일 사용(없으면 원본 폴백). 원본 blob 은 내보내기에서만 디코드.
+  for (const img of images) urls[img.id] = URL.createObjectURL(img.thumbBlob ?? img.blob)
   return urls
 }
 
@@ -107,10 +122,11 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   selectType: async (id) => {
-    const [images, existing] = await Promise.all([
+    const [rawImages, existing] = await Promise.all([
       db.getImages(id),
       db.getLayout(id),
     ])
+    const images = await ensureThumbs(rawImages)
     const base = existing ?? makeDefaultLayout(id)
     const layout = withAutoSize(base, images)
     if (!existing || layout !== base) await db.putLayout(layout)
@@ -159,12 +175,13 @@ export const useStore = create<StoreState>((set, get) => ({
     for (const file of files) {
       if (!file.type.startsWith('image/')) continue
       try {
-        const { width, height } = await decodeSize(file)
+        const { width, height, thumbBlob } = await decodeMeta(file)
         const img: StoredImage = {
           id: uid(),
           typeId,
           name: file.name,
           blob: file,
+          thumbBlob,
           width,
           height,
         }
@@ -178,7 +195,7 @@ export const useStore = create<StoreState>((set, get) => ({
     set((s) => {
       const images = [...s.images, ...added]
       const urls = { ...s.urls }
-      for (const img of added) urls[img.id] = URL.createObjectURL(img.blob)
+      for (const img of added) urls[img.id] = URL.createObjectURL(img.thumbBlob ?? img.blob)
       return { images, urls }
     })
   },

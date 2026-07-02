@@ -19,10 +19,10 @@ export default function ControlPanel() {
           <input
             type="number"
             min={1}
-            max={20}
+            max={50}
             value={layout.rows}
             onChange={(e) =>
-              setGridSize(clamp(Number(e.target.value) || 1, 1, 20), layout.cols)
+              setGridSize(clamp(Number(e.target.value) || 1, 1, 50), layout.cols)
             }
           />
         </div>
@@ -31,10 +31,10 @@ export default function ControlPanel() {
           <input
             type="number"
             min={1}
-            max={20}
+            max={50}
             value={layout.cols}
             onChange={(e) =>
-              setGridSize(layout.rows, clamp(Number(e.target.value) || 1, 1, 20))
+              setGridSize(layout.rows, clamp(Number(e.target.value) || 1, 1, 50))
             }
           />
         </div>
