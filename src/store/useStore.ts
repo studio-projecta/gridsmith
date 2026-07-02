@@ -7,10 +7,28 @@ import type {
   EditMode,
   CellTransform,
 } from '../types'
-import { DEFAULT_TRANSFORM, makeDefaultLayout, resizeCells } from '../types'
+import { DEFAULT_TRANSFORM, makeDefaultLayout, resizeCells, computeAutoOutput } from '../types'
 import * as db from '../db/idb'
 
 const LAST_TYPE_KEY = 'gridsmith:lastTypeId'
+
+/**
+ * autoSize 가 켜져 있으면 출력 px 를 첫 이미지 원본 크기 × 그리드 기준으로 맞춘다.
+ * 변경이 없으면 원본 layout 을 그대로 반환(불필요한 저장/렌더 방지).
+ */
+function withAutoSize(layout: GridLayout, images: StoredImage[]): GridLayout {
+  if (layout.autoSize === false || images.length === 0) return layout
+  const img = images[0]
+  const { outputWidth, outputHeight } = computeAutoOutput(
+    layout.rows,
+    layout.cols,
+    layout.gap,
+    img.width,
+    img.height,
+  )
+  if (outputWidth === layout.outputWidth && outputHeight === layout.outputHeight) return layout
+  return { ...layout, outputWidth, outputHeight }
+}
 
 function uid(): string {
   return (
@@ -39,6 +57,7 @@ interface StoreState {
   removeImage: (id: string) => Promise<void>
 
   updateLayout: (patch: Partial<GridLayout>) => void
+  setAutoSize: (on: boolean) => void
   setGridSize: (rows: number, cols: number) => void
   setCellSlot: (index: number, slot: CellSlot | null) => void
   swapCells: (a: number, b: number) => void
@@ -98,8 +117,9 @@ export const useStore = create<StoreState>((set, get) => ({
       db.getImages(id),
       db.getLayout(id),
     ])
-    const layout = existing ?? makeDefaultLayout(id)
-    if (!existing) await db.putLayout(layout)
+    const base = existing ?? makeDefaultLayout(id)
+    const layout = withAutoSize(base, images)
+    if (!existing || layout !== base) await db.putLayout(layout)
 
     revokeUrls(get().urls)
     localStorage.setItem(LAST_TYPE_KEY, id)
@@ -165,7 +185,15 @@ export const useStore = create<StoreState>((set, get) => ({
       const images = [...s.images, ...added]
       const urls = { ...s.urls }
       for (const img of added) urls[img.id] = URL.createObjectURL(img.blob)
-      return { images, urls }
+      let layout = s.layout
+      if (layout) {
+        const next = withAutoSize(layout, images)
+        if (next !== layout) {
+          layout = next
+          persistLayout(next)
+        }
+      }
+      return { images, urls, layout }
     })
   },
 
@@ -175,21 +203,33 @@ export const useStore = create<StoreState>((set, get) => ({
       const url = s.urls[id]
       if (url) URL.revokeObjectURL(url)
       const { [id]: _removed, ...urls } = s.urls
-      // 삭제된 이미지를 참조하던 셀 비우기.
+      const images = s.images.filter((i) => i.id !== id)
+      // 삭제된 이미지를 참조하던 셀 비우고, autoSize 면 새 첫 이미지 기준으로 출력 크기 갱신.
       let layout = s.layout
       if (layout) {
         const cells = layout.cells.map((c) => (c?.imageId === id ? null : c))
-        layout = { ...layout, cells }
+        layout = withAutoSize({ ...layout, cells }, images)
         persistLayout(layout)
       }
-      return { images: s.images.filter((i) => i.id !== id), urls, layout }
+      return { images, urls, layout }
     })
   },
 
   updateLayout: (patch) => {
     const layout = get().layout
     if (!layout) return
-    const next = { ...layout, ...patch }
+    let next = { ...layout, ...patch }
+    // gap 은 출력 크기 계산에 영향 → autoSize 면 재계산.
+    if ('gap' in patch) next = withAutoSize(next, get().images)
+    persistLayout(next)
+    set({ layout: next })
+  },
+
+  setAutoSize: (on) => {
+    const layout = get().layout
+    if (!layout) return
+    let next = { ...layout, autoSize: on }
+    if (on) next = withAutoSize(next, get().images)
     persistLayout(next)
     set({ layout: next })
   },
@@ -198,7 +238,7 @@ export const useStore = create<StoreState>((set, get) => ({
     const layout = get().layout
     if (!layout) return
     const cells = resizeCells(layout.cells, layout.cols, rows, cols)
-    const next = { ...layout, rows, cols, cells }
+    const next = withAutoSize({ ...layout, rows, cols, cells }, get().images)
     persistLayout(next)
     set({ layout: next, selectedCell: null })
   },

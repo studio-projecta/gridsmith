@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { cellRect, imageRect, clamp, type Rect } from '../src/lib/layout'
+import { computeAutoOutput } from '../src/types'
 import type { GridLayout, CellTransform } from '../src/types'
 
 function layout(patch: Partial<GridLayout>): GridLayout {
@@ -78,6 +79,26 @@ test.describe('imageRect', () => {
   test('offset: offsetX=1 이면 셀 폭의 절반만큼 우측 이동', () => {
     // shift = 1 * 100/2 = 50 → x = 0 + 50
     eq(imageRect(cell, 200, 200, 'cover', T({ offsetX: 1 })), { x: 50, y: 0, w: 100, h: 100 })
+  })
+})
+
+test.describe('computeAutoOutput', () => {
+  test('셀=이미지 원본이 되도록 출력 크기 산출 (gap 0)', () => {
+    // 100x80 이미지, 3열 2행 → 300 x 160
+    expect(computeAutoOutput(2, 3, 0, 100, 80)).toEqual({ outputWidth: 300, outputHeight: 160 })
+  })
+
+  test('gap 포함: 바깥 여백까지 반영', () => {
+    // 200x200, 2x2, gap 20 → 200*2 + 20*3 = 460
+    expect(computeAutoOutput(2, 2, 20, 200, 200)).toEqual({ outputWidth: 460, outputHeight: 460 })
+  })
+
+  test('cellRect 역산과 일치: 산출된 출력에서 셀 폭이 정확히 이미지 폭', () => {
+    const { outputWidth, outputHeight } = computeAutoOutput(2, 3, 10, 120, 90)
+    const L = layout({ rows: 2, cols: 3, gap: 10, outputWidth, outputHeight })
+    const c0 = cellRect(L, 0)
+    expect(c0.w).toBeCloseTo(120, 5)
+    expect(c0.h).toBeCloseTo(90, 5)
   })
 })
 

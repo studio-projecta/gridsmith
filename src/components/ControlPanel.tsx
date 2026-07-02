@@ -13,6 +13,7 @@ export default function ControlPanel() {
   const layout = useStore((s) => s.layout)
   const setGridSize = useStore((s) => s.setGridSize)
   const updateLayout = useStore((s) => s.updateLayout)
+  const setAutoSize = useStore((s) => s.setAutoSize)
   const editMode = useStore((s) => s.editMode)
   const selectedCell = useStore((s) => s.selectedCell)
   const updateCellTransform = useStore((s) => s.updateCellTransform)
@@ -135,6 +136,17 @@ export default function ControlPanel() {
 
       <section>
         <h3>출력 이미지</h3>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={layout.autoSize}
+            onChange={(e) => setAutoSize(e.target.checked)}
+          />
+          첫 이미지 크기로 자동 맞춤
+        </label>
+        {layout.autoSize && (
+          <p className="hint">셀이 첫 이미지 원본 크기가 되도록 출력 크기가 자동 계산됩니다.</p>
+        )}
         <div className="field">
           <label>가로 (px)</label>
           <input
@@ -142,8 +154,12 @@ export default function ControlPanel() {
             min={1}
             max={12000}
             value={layout.outputWidth}
+            disabled={layout.autoSize}
             onChange={(e) =>
-              updateLayout({ outputWidth: clamp(Number(e.target.value) || 1, 1, 12000) })
+              updateLayout({
+                outputWidth: clamp(Number(e.target.value) || 1, 1, 12000),
+                autoSize: false,
+              })
             }
           />
         </div>
@@ -154,8 +170,12 @@ export default function ControlPanel() {
             min={1}
             max={12000}
             value={layout.outputHeight}
+            disabled={layout.autoSize}
             onChange={(e) =>
-              updateLayout({ outputHeight: clamp(Number(e.target.value) || 1, 1, 12000) })
+              updateLayout({
+                outputHeight: clamp(Number(e.target.value) || 1, 1, 12000),
+                autoSize: false,
+              })
             }
           />
         </div>
@@ -163,7 +183,9 @@ export default function ControlPanel() {
           {SIZE_PRESETS.map((p) => (
             <button
               key={p.label}
-              onClick={() => updateLayout({ outputWidth: p.w, outputHeight: p.h })}
+              onClick={() =>
+                updateLayout({ outputWidth: p.w, outputHeight: p.h, autoSize: false })
+              }
             >
               {p.label}
             </button>

@@ -228,6 +228,22 @@ button {
   background: none;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.field input:disabled {
+  background: #f0f0f0;
+  color: #999;
+  cursor: not-allowed;
+}
+
 .presets {
   display: flex;
   flex-wrap: wrap;

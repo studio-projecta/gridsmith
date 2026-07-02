@@ -53,6 +53,7 @@ test('미세조정: 배율·오프셋이 내보내기 결과에 반영', async (
   await expect(page.locator('.tray-list .thumb')).toHaveCount(1)
 
   // 1x1, 400x400, gap0, contain, 배경 magenta
+  await page.getByRole('checkbox', { name: /자동 맞춤/ }).uncheck()
   const nums = page.getByRole('spinbutton') // [rows, cols, gap, outW, outH]
   await nums.nth(0).fill('1')
   await nums.nth(1).fill('1')

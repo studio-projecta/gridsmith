@@ -43,6 +43,11 @@ export interface GridLayout {
   /** 셀 간격(출력 px 기준). 바깥 여백에도 동일 적용. */
   gap: number
   fit: FitMode
+  /**
+   * true 면 출력 크기를 첫 이미지 원본 크기 × 그리드 기준으로 자동 계산한다.
+   * 사용자가 출력 px 를 직접 지정하면 false 로 고정된다.
+   */
+  autoSize: boolean
 }
 
 export const DEFAULT_TRANSFORM: CellTransform = {
@@ -64,6 +69,21 @@ export function makeDefaultLayout(typeId: string): GridLayout {
     outputHeight: 1500,
     gap: 0,
     fit: 'cover',
+    autoSize: true,
+  }
+}
+
+/** 셀=이미지 원본 크기가 되도록 출력 px 를 계산. cellRect 의 역산과 일치한다. */
+export function computeAutoOutput(
+  rows: number,
+  cols: number,
+  gap: number,
+  imgW: number,
+  imgH: number,
+): { outputWidth: number; outputHeight: number } {
+  return {
+    outputWidth: Math.round(imgW * cols + gap * (cols + 1)),
+    outputHeight: Math.round(imgH * rows + gap * (rows + 1)),
   }
 }
 

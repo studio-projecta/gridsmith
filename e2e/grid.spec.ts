@@ -30,6 +30,8 @@ test('end-to-end: 유형 생성 → 업로드 → 배치 → 내보내기 → �
   await expect(page.locator('.tray-list .thumb')).toHaveCount(4)
 
   // 3) 그리드/출력/배경 설정: 2x2, gap 20, 400x400, 배경 magenta
+  // 출력 크기를 직접 지정하려면 자동 맞춤을 먼저 끈다.
+  await page.getByRole('checkbox', { name: /자동 맞춤/ }).uncheck()
   const nums = page.getByRole('spinbutton') // [rows, cols, gap, outW, outH]
   await nums.nth(0).fill('2')
   await nums.nth(1).fill('2')
