@@ -1,4 +1,7 @@
-# Gridsmith — 진행상황
+# Gridsmith — 진행상황 (v1.0.0)
+
+버전은 `package.json`의 `version` 을 vite `define`(`__APP_VERSION__`)으로 주입해 하단 푸터에 표시. 변경 이력은 `CHANGELOG.md`. 상단 헤더는 제목만.
+
 
 이미지 그리드 합성 웹앱. 그룹유형별로 이미지를 업로드해 그리드(예: 5×5)로 배치하고 하나의 이미지로 합쳐 다운로드한다. 순수 프론트엔드(서버 없음), 데이터는 브라우저 IndexedDB에 저장.
 

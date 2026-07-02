@@ -12,19 +12,26 @@ export default function App() {
   }, [init])
 
   return (
-    <div className="layout">
-      <TypeSidebar />
+    <div className="app-shell">
+      <header className="app-header">
+        <h1>Gridsmith</h1>
+      </header>
 
-      <main className="main">
-        {selectedTypeId ? (
-          <Workspace />
-        ) : (
-          <div className="hero">
-            <h1>Gridsmith</h1>
-            <p>왼쪽에서 그룹유형을 추가하고 이미지를 업로드하세요.</p>
-          </div>
-        )}
-      </main>
+      <div className="layout">
+        <TypeSidebar />
+
+        <main className="main">
+          {selectedTypeId ? (
+            <Workspace />
+          ) : (
+            <div className="hero">
+              <p>왼쪽에서 그룹유형을 추가하고 이미지를 업로드하세요.</p>
+            </div>
+          )}
+        </main>
+      </div>
+
+      <footer className="app-footer">Gridsmith v{__APP_VERSION__}</footer>
     </div>
   )
 }

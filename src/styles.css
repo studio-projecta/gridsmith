@@ -17,11 +17,46 @@ button {
   font: inherit;
 }
 
+/* ---- app shell ---- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  background: #1f2937;
+  color: #fff;
+  border-bottom: 1px solid #111827;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.app-footer {
+  flex: none;
+  padding: 8px 20px;
+  background: #f0f0f2;
+  border-top: 1px solid #e0e0e5;
+  color: #888;
+  font-size: 12px;
+  text-align: right;
+}
+
 /* ---- layout ---- */
 .layout {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 220px 1fr;
-  height: 100vh;
 }
 
 .main {
