@@ -11,6 +11,7 @@ export default function GridEditor() {
   const selectedCell = useStore((s) => s.selectedCell)
   const setSelectedCell = useStore((s) => s.setSelectedCell)
   const updateCellTransform = useStore((s) => s.updateCellTransform)
+  const setCellSlot = useStore((s) => s.setCellSlot)
 
   const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -35,6 +36,28 @@ export default function GridEditor() {
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [reorder, selectedCell, layout, updateCellTransform])
+
+  // 선택한 셀에서 Delete/Backspace 로 이미지 비우기(트레이 원본은 유지).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return
+      const t = e.target as HTMLElement | null
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.tagName === 'SELECT' ||
+          t.isContentEditable)
+      ) {
+        return
+      }
+      if (selectedCell == null || !layout?.cells[selectedCell]) return
+      e.preventDefault()
+      setCellSlot(selectedCell, null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedCell, layout, setCellSlot])
 
   if (!layout) return null
 
@@ -61,13 +84,12 @@ export default function GridEditor() {
               url={slot ? urls[slot.imageId] : undefined}
               reorder={reorder}
               selected={selectedCell === i}
-              onSelect={(idx) => {
-                if (!reorder) setSelectedCell(idx)
-              }}
+              onSelect={(idx) => setSelectedCell(idx)}
             />
           )
         })}
       </div>
+      <p className="grid-hint">셀을 클릭해 선택한 뒤 Delete/Backspace 키로 해당 칸을 비울 수 있습니다.</p>
     </div>
   )
 }

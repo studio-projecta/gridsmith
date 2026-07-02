@@ -118,11 +118,18 @@ button {
 /* ---- grid stage ---- */
 .grid-stage {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   background: #e9e9ee;
   border-radius: 10px;
   padding: 16px;
+}
+
+.grid-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #777;
 }
 
 .grid-container {
