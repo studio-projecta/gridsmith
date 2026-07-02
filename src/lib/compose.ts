@@ -17,9 +17,12 @@ export async function composeToBlob(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('canvas 2d context 를 생성할 수 없습니다.')
 
-  // 배경 채우기. JPEG 는 투명도가 없으므로 배경색이 항상 보인다.
-  ctx.fillStyle = layout.bgColor
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  // 배경 채우기. 투명 배경이면 채우지 않아 알파 0 으로 남는다(PNG 에서만 유지).
+  // JPEG 는 알파가 없어 투명 영역이 검정으로 합성된다.
+  if (!(layout.transparentBg && format === 'png')) {
+    ctx.fillStyle = layout.bgColor
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+  }
 
   const imgMap = new Map(images.map((i) => [i.id, i]))
 

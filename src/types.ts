@@ -38,6 +38,8 @@ export interface GridLayout {
   cols: number
   cells: (CellSlot | null)[]
   bgColor: string
+  /** true 면 배경을 채우지 않음(투명). PNG 에서만 유지되고 JPEG 은 검정으로 채워짐. */
+  transparentBg: boolean
   outputWidth: number
   outputHeight: number
   /** 셀 간격(출력 px 기준). 바깥 여백에도 동일 적용. */
@@ -65,6 +67,7 @@ export function makeDefaultLayout(typeId: string): GridLayout {
     cols,
     cells: new Array(rows * cols).fill(null),
     bgColor: '#ffffff',
+    transparentBg: false,
     outputWidth: 1500,
     outputHeight: 1500,
     gap: 0,

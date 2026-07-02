@@ -42,10 +42,10 @@ export default function GridEditor() {
     <div className="grid-stage">
       <div
         ref={containerRef}
-        className="grid-container"
+        className={'grid-container' + (layout.transparentBg ? ' transparent-bg' : '')}
         style={{
           aspectRatio: `${layout.outputWidth} / ${layout.outputHeight}`,
-          background: layout.bgColor,
+          background: layout.transparentBg ? undefined : layout.bgColor,
         }}
         onClick={() => setSelectedCell(null)}
       >

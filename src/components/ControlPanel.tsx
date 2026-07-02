@@ -195,14 +195,26 @@ export default function ControlPanel() {
 
       <section>
         <h3>배경</h3>
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={layout.transparentBg}
+            onChange={(e) => updateLayout({ transparentBg: e.target.checked })}
+          />
+          투명 배경
+        </label>
         <div className="field">
           <label>배경색</label>
           <input
             type="color"
             value={layout.bgColor}
+            disabled={layout.transparentBg}
             onChange={(e) => updateLayout({ bgColor: e.target.value })}
           />
         </div>
+        {layout.transparentBg && (
+          <p className="hint">투명은 PNG 로 내보낼 때만 유지됩니다. JPEG 은 검정으로 채워집니다.</p>
+        )}
       </section>
     </div>
   )
