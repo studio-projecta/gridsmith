@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { clamp } from '../lib/layout'
 import GridCell from './GridCell'
+
+const ZOOM_MIN = 0.25
+const ZOOM_MAX = 4
 
 export default function GridEditor() {
   const layout = useStore((s) => s.layout)
@@ -14,16 +17,26 @@ export default function GridEditor() {
   const setCellSlot = useStore((s) => s.setCellSlot)
 
   const containerRef = useRef<HTMLDivElement | null>(null)
+  // 편집 미리보기 줌(출력 크기와 무관한 표시 배율).
+  const [zoom, setZoom] = useState(1)
+  const setZoomClamped = (z: number) =>
+    setZoom(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100)))
 
   const imgMap = useMemo(() => new Map(images.map((i) => [i.id, i])), [images])
 
   const reorder = editMode === 'reorder'
 
-  // 휠로 선택 셀 확대/축소 (미세조정 모드). onWheel 은 passive 라 preventDefault 불가하여 네이티브 리스너 사용.
+  // 휠: Ctrl/⌘ 이면 미리보기 줌, 그 외 미세조정 모드에선 선택 셀 확대/축소.
+  // onWheel 은 passive 라 preventDefault 불가하여 네이티브 리스너 사용.
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        setZoomClamped(zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1))
+        return
+      }
       if (reorder || selectedCell == null) return
       const slot = layout?.cells[selectedCell]
       if (!slot) return
@@ -35,7 +48,7 @@ export default function GridEditor() {
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [reorder, selectedCell, layout, updateCellTransform])
+  }, [reorder, selectedCell, layout, updateCellTransform, zoom])
 
   // 선택한 셀에서 Delete/Backspace 로 이미지 비우기(트레이 원본은 유지).
   useEffect(() => {
@@ -63,33 +76,66 @@ export default function GridEditor() {
 
   return (
     <div className="grid-stage">
-      <div
-        ref={containerRef}
-        className={'grid-container' + (layout.transparentBg ? ' transparent-bg' : '')}
-        style={{
-          aspectRatio: `${layout.outputWidth} / ${layout.outputHeight}`,
-          background: layout.transparentBg ? undefined : layout.bgColor,
-        }}
-        onClick={() => setSelectedCell(null)}
-      >
-        {layout.cells.map((slot, i) => {
-          const image = slot ? imgMap.get(slot.imageId) : undefined
-          return (
-            <GridCell
-              key={i}
-              index={i}
-              layout={layout}
-              slot={slot}
-              image={image}
-              url={slot ? urls[slot.imageId] : undefined}
-              reorder={reorder}
-              selected={selectedCell === i}
-              onSelect={(idx) => setSelectedCell(idx)}
-            />
-          )
-        })}
+      <div className="zoom-bar">
+        <button
+          className="zoom-btn"
+          title="축소"
+          aria-label="축소"
+          onClick={() => setZoomClamped(zoom - 0.25)}
+          disabled={zoom <= ZOOM_MIN}
+        >
+          −
+        </button>
+        <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+        <button
+          className="zoom-btn"
+          title="확대"
+          aria-label="확대"
+          onClick={() => setZoomClamped(zoom + 0.25)}
+          disabled={zoom >= ZOOM_MAX}
+        >
+          ＋
+        </button>
+        <button className="zoom-reset" title="100%로" onClick={() => setZoom(1)}>
+          맞춤
+        </button>
       </div>
-      <p className="grid-hint">셀을 클릭해 선택한 뒤 Delete/Backspace 키로 해당 칸을 비울 수 있습니다.</p>
+
+      <div className="grid-scroll">
+        <div
+          ref={containerRef}
+          className={'grid-container' + (layout.transparentBg ? ' transparent-bg' : '')}
+          style={
+            {
+              aspectRatio: `${layout.outputWidth} / ${layout.outputHeight}`,
+              background: layout.transparentBg ? undefined : layout.bgColor,
+              '--zoom': zoom,
+            } as React.CSSProperties
+          }
+          onClick={() => setSelectedCell(null)}
+        >
+          {layout.cells.map((slot, i) => {
+            const image = slot ? imgMap.get(slot.imageId) : undefined
+            return (
+              <GridCell
+                key={i}
+                index={i}
+                layout={layout}
+                slot={slot}
+                image={image}
+                url={slot ? urls[slot.imageId] : undefined}
+                reorder={reorder}
+                selected={selectedCell === i}
+                onSelect={(idx) => setSelectedCell(idx)}
+              />
+            )
+          })}
+        </div>
+      </div>
+
+      <p className="grid-hint">
+        Ctrl/⌘ + 휠 로 확대·축소 · 셀 선택 후 Delete/Backspace 로 비우기
+      </p>
     </div>
   )
 }

@@ -244,24 +244,85 @@ select {
 .grid-stage {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 20px;
+  padding: 16px 20px 20px;
+}
+
+.zoom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.zoom-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.zoom-value {
+  min-width: 46px;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.zoom-reset {
+  padding: 5px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.zoom-reset:hover {
+  background: var(--surface-2);
+}
+
+.grid-scroll {
+  width: 100%;
+  overflow: auto;
+  max-height: 72vh;
 }
 
 .grid-hint {
   margin: 0;
   font-size: 12px;
   color: var(--muted);
+  text-align: center;
 }
 
 .grid-container {
   position: relative;
-  width: 100%;
-  max-width: min(68vh, 100%);
+  width: calc(min(64vh, 100%) * var(--zoom, 1));
+  margin: 0 auto;
   border-radius: 6px;
   box-shadow: var(--shadow-md);
 }
