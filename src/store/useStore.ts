@@ -280,12 +280,17 @@ export const useStore = create<StoreState>((set, get) => ({
   autoFill: () => {
     const { layout, images } = get()
     if (!layout) return
+    // 이미 어떤 셀에든 올라간 이미지는 중복 배치하지 않는다.
+    const used = new Set<string>()
+    for (const c of layout.cells) if (c) used.add(c.imageId)
+    const available = images.filter((img) => !used.has(img.id))
+
     const cells = layout.cells.slice()
-    let imgIdx = 0
-    for (let i = 0; i < cells.length && imgIdx < images.length; i++) {
+    let k = 0
+    for (let i = 0; i < cells.length && k < available.length; i++) {
       if (cells[i]) continue
-      cells[i] = { imageId: images[imgIdx].id, transform: { ...DEFAULT_TRANSFORM } }
-      imgIdx++
+      cells[i] = { imageId: available[k].id, transform: { ...DEFAULT_TRANSFORM } }
+      k++
     }
     const next = { ...layout, cells }
     persistLayout(next)
