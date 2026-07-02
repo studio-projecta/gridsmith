@@ -1,12 +1,5 @@
 import { create } from 'zustand'
-import type {
-  GroupType,
-  StoredImage,
-  GridLayout,
-  CellSlot,
-  EditMode,
-  CellTransform,
-} from '../types'
+import type { GroupType, StoredImage, GridLayout, CellSlot } from '../types'
 import { DEFAULT_TRANSFORM, makeDefaultLayout, reflowCells, computeAutoOutput } from '../types'
 import * as db from '../db/idb'
 
@@ -48,7 +41,6 @@ interface StoreState {
   layout: GridLayout | null
   /** imageId -> object URL (blob 미리보기용). */
   urls: Record<string, string>
-  editMode: EditMode
   selectedCell: number | null
 
   init: () => Promise<void>
@@ -65,11 +57,9 @@ interface StoreState {
   setGridSize: (rows: number, cols: number) => void
   setCellSlot: (index: number, slot: CellSlot | null) => void
   moveCell: (from: number, to: number) => void
-  updateCellTransform: (index: number, patch: Partial<CellTransform>) => void
   autoFill: () => void
   clearCells: () => void
 
-  setEditMode: (mode: EditMode) => void
   setSelectedCell: (index: number | null) => void
 }
 
@@ -105,7 +95,6 @@ export const useStore = create<StoreState>((set, get) => ({
   images: [],
   layout: null,
   urls: {},
-  editMode: 'reorder',
   selectedCell: null,
 
   init: async () => {
@@ -262,18 +251,6 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ layout: next })
   },
 
-  updateCellTransform: (index, patch) => {
-    const layout = get().layout
-    if (!layout) return
-    const slot = layout.cells[index]
-    if (!slot) return
-    const cells = layout.cells.slice()
-    cells[index] = { ...slot, transform: { ...slot.transform, ...patch } }
-    const next = { ...layout, cells }
-    persistLayout(next)
-    set({ layout: next })
-  },
-
   autoFill: () => {
     const { layout, images } = get()
     if (!layout) return
@@ -302,6 +279,5 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ layout: next, selectedCell: null })
   },
 
-  setEditMode: (mode) => set({ editMode: mode, selectedCell: null }),
   setSelectedCell: (index) => set({ selectedCell: index }),
 }))

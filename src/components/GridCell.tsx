@@ -1,8 +1,6 @@
-import { useRef } from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { GridLayout, StoredImage, CellSlot } from '../types'
-import { cellRect, imageRect, clamp } from '../lib/layout'
-import { useStore } from '../store/useStore'
+import { cellRect, imageRect } from '../lib/layout'
 
 interface Props {
   index: number
@@ -10,7 +8,6 @@ interface Props {
   slot: CellSlot | null
   image: StoredImage | undefined
   url: string | undefined
-  reorder: boolean
   selected: boolean
   onSelect: (index: number) => void
 }
@@ -21,23 +18,14 @@ export default function GridCell({
   slot,
   image,
   url,
-  reorder,
   selected,
   onSelect,
 }: Props) {
   const cell = cellRect(layout, index)
-  const updateCellTransform = useStore((s) => s.updateCellTransform)
-
-  const cellElRef = useRef<HTMLDivElement | null>(null)
-  // 미세조정 팬 드래그의 기준값(포인터 시작 좌표 + 시작 오프셋 + 셀 화면 크기).
-  const panRef = useRef<
-    { startX: number; startY: number; baseOX: number; baseOY: number; w: number; h: number } | null
-  >(null)
 
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: `cell-${index}`,
     data: { index },
-    disabled: !reorder,
   })
 
   const {
@@ -48,46 +36,8 @@ export default function GridCell({
   } = useDraggable({
     id: `cellimg-${index}`,
     data: { source: 'cell', index },
-    disabled: !reorder || !slot,
+    disabled: !slot,
   })
-
-  const setCellRef = (el: HTMLDivElement | null) => {
-    setDropRef(el)
-    cellElRef.current = el
-  }
-
-  const adjust = !reorder && !!slot
-
-  const onPanDown = (e: React.PointerEvent) => {
-    if (!adjust || !slot) return
-    onSelect(index)
-    const rect = cellElRef.current?.getBoundingClientRect()
-    if (!rect) return
-    panRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      baseOX: slot.transform.offsetX,
-      baseOY: slot.transform.offsetY,
-      w: rect.width,
-      h: rect.height,
-    }
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-
-  const onPanMove = (e: React.PointerEvent) => {
-    const p = panRef.current
-    if (!p) return
-    // 화면 이동 dpx 를 셀 폭 대비 비율로 환산 → offset(-1..1) 은 셀 절반 기준이라 ×2.
-    const nOX = clamp(p.baseOX + (2 * (e.clientX - p.startX)) / p.w, -1, 1)
-    const nOY = clamp(p.baseOY + (2 * (e.clientY - p.startY)) / p.h, -1, 1)
-    updateCellTransform(index, { offsetX: nOX, offsetY: nOY })
-  }
-
-  const onPanUp = (e: React.PointerEvent) => {
-    if (!panRef.current) return
-    panRef.current = null
-    e.currentTarget.releasePointerCapture(e.pointerId)
-  }
 
   // 출력 px → 컨테이너(출력 종횡비) 대비 % 로 변환.
   const leftPct = (cell.x / layout.outputWidth) * 100
@@ -109,13 +59,12 @@ export default function GridCell({
 
   return (
     <div
-      ref={setCellRef}
+      ref={setDropRef}
       className={
         'grid-cell' +
         (isOver ? ' over' : '') +
         (selected ? ' selected' : '') +
-        (isDragging ? ' dragging' : '') +
-        (adjust ? ' adjust' : '')
+        (isDragging ? ' dragging' : '')
       }
       style={{
         left: `${leftPct}%`,
@@ -129,15 +78,7 @@ export default function GridCell({
       }}
     >
       {image && url ? (
-        <div
-          className="cell-img-wrap"
-          ref={setDragRef}
-          {...(reorder ? listeners : {})}
-          {...(reorder ? attributes : {})}
-          {...(adjust
-            ? { onPointerDown: onPanDown, onPointerMove: onPanMove, onPointerUp: onPanUp }
-            : {})}
-        >
+        <div className="cell-img-wrap" ref={setDragRef} {...listeners} {...attributes}>
           <img src={url} alt="" draggable={false} style={imgStyle ?? undefined} />
         </div>
       ) : (

@@ -29,7 +29,6 @@ export interface CellSlot {
 }
 
 export type FitMode = 'cover' | 'contain'
-export type EditMode = 'reorder' | 'adjust'
 
 /** 유형당 1개. cells 길이 = rows*cols, 행 우선(row-major). */
 export interface GridLayout {

@@ -1,82 +1,16 @@
 import { useStore } from '../store/useStore'
 import { clamp } from '../lib/layout'
-import { DEFAULT_TRANSFORM } from '../types'
 
 export default function ControlPanel() {
   const layout = useStore((s) => s.layout)
   const setGridSize = useStore((s) => s.setGridSize)
   const updateLayout = useStore((s) => s.updateLayout)
   const setAutoSize = useStore((s) => s.setAutoSize)
-  const editMode = useStore((s) => s.editMode)
-  const selectedCell = useStore((s) => s.selectedCell)
-  const updateCellTransform = useStore((s) => s.updateCellTransform)
 
   if (!layout) return null
 
-  const selSlot =
-    editMode === 'adjust' && selectedCell != null ? layout.cells[selectedCell] : null
-
   return (
     <div className="controls">
-      {editMode === 'adjust' && (
-        <section className="adjust-section">
-          <h3>미세조정 {selectedCell != null ? `· 셀 ${selectedCell + 1}` : ''}</h3>
-          {selSlot ? (
-            <>
-              <div className="field col">
-                <label>배율 {selSlot.transform.scale.toFixed(2)}×</label>
-                <input
-                  type="range"
-                  min={0.2}
-                  max={5}
-                  step={0.01}
-                  value={selSlot.transform.scale}
-                  onChange={(e) =>
-                    updateCellTransform(selectedCell!, { scale: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="field col">
-                <label>가로 위치</label>
-                <input
-                  type="range"
-                  min={-1}
-                  max={1}
-                  step={0.01}
-                  value={selSlot.transform.offsetX}
-                  onChange={(e) =>
-                    updateCellTransform(selectedCell!, { offsetX: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="field col">
-                <label>세로 위치</label>
-                <input
-                  type="range"
-                  min={-1}
-                  max={1}
-                  step={0.01}
-                  value={selSlot.transform.offsetY}
-                  onChange={(e) =>
-                    updateCellTransform(selectedCell!, { offsetY: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <button
-                className="reset-btn"
-                onClick={() => updateCellTransform(selectedCell!, { ...DEFAULT_TRANSFORM })}
-              >
-                위치·배율 초기화
-              </button>
-            </>
-          ) : (
-            <p className="hint">
-              셀을 클릭해 선택한 뒤 이미지를 드래그하거나 휠로 확대/축소하세요.
-            </p>
-          )}
-        </section>
-      )}
-
       <section>
         <h3>그리드</h3>
         <div className="field">
