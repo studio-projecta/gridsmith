@@ -14,6 +14,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
+        <span className="brand-mark" aria-hidden="true" />
         <h1>Gridsmith</h1>
       </header>
 
