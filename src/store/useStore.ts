@@ -57,6 +57,7 @@ interface StoreState {
   setGridSize: (rows: number, cols: number) => void
   setCellSlot: (index: number, slot: CellSlot | null) => void
   moveCell: (from: number, to: number) => void
+  placeInNextEmpty: (imageId: string) => void
   autoFill: () => void
   clearCells: () => void
 
@@ -246,6 +247,19 @@ export const useStore = create<StoreState>((set, get) => ({
     const cells = layout.cells.slice()
     const [moved] = cells.splice(from, 1)
     cells.splice(to, 0, moved)
+    const next = withAutoSize({ ...layout, cells }, get().images)
+    persistLayout(next)
+    set({ layout: next })
+  },
+
+  placeInNextEmpty: (imageId) => {
+    const layout = get().layout
+    if (!layout) return
+    // 읽기순서상 첫 빈 셀에 배치. 빈 셀이 없으면 무시.
+    const index = layout.cells.findIndex((c) => c == null)
+    if (index === -1) return
+    const cells = layout.cells.slice()
+    cells[index] = { imageId, transform: { ...DEFAULT_TRANSFORM } }
     const next = withAutoSize({ ...layout, cells }, get().images)
     persistLayout(next)
     set({ layout: next })
