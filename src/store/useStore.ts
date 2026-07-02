@@ -10,7 +10,7 @@ import type {
 import { DEFAULT_TRANSFORM, makeDefaultLayout, resizeCells } from '../types'
 import * as db from '../db/idb'
 
-const LAST_TYPE_KEY = 'imagegen:lastTypeId'
+const LAST_TYPE_KEY = 'gridsmith:lastTypeId'
 
 function uid(): string {
   return (

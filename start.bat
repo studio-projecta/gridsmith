@@ -4,7 +4,7 @@ chcp 65001 >nul
 cd /d "%~dp0"
 
 echo ================================================
-echo   ImageGen - install, build, and serve
+echo   Gridsmith - install, build, and serve
 echo ================================================
 echo.
 

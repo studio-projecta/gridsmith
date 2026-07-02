@@ -9,7 +9,7 @@ function countStore(page: Page, store: 'images' | 'layouts' | 'types') {
   return page.evaluate(
     (name) =>
       new Promise<number>((resolve, reject) => {
-        const req = indexedDB.open('imagegen')
+        const req = indexedDB.open('gridsmith')
         req.onerror = () => reject(req.error)
         req.onsuccess = () => {
           const db = req.result

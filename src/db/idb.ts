@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { GroupType, StoredImage, GridLayout } from '../types'
 
-interface ImageGenDB extends DBSchema {
+interface GridsmithDB extends DBSchema {
   types: {
     key: string
     value: GroupType
@@ -17,11 +17,11 @@ interface ImageGenDB extends DBSchema {
   }
 }
 
-let dbPromise: Promise<IDBPDatabase<ImageGenDB>> | null = null
+let dbPromise: Promise<IDBPDatabase<GridsmithDB>> | null = null
 
 function getDB() {
   if (!dbPromise) {
-    dbPromise = openDB<ImageGenDB>('imagegen', 1, {
+    dbPromise = openDB<GridsmithDB>('gridsmith', 1, {
       upgrade(db) {
         db.createObjectStore('types', { keyPath: 'id' })
         const images = db.createObjectStore('images', { keyPath: 'id' })

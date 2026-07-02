@@ -20,7 +20,7 @@ export default function App() {
           <Workspace />
         ) : (
           <div className="hero">
-            <h1>ImageGen</h1>
+            <h1>Gridsmith</h1>
             <p>왼쪽에서 그룹유형을 추가하고 이미지를 업로드하세요.</p>
           </div>
         )}
