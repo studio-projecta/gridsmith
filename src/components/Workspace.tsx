@@ -18,7 +18,7 @@ import ControlPanel from './ControlPanel'
 
 export default function Workspace() {
   const setCellSlot = useStore((s) => s.setCellSlot)
-  const swapCells = useStore((s) => s.swapCells)
+  const moveCell = useStore((s) => s.moveCell)
   const layout = useStore((s) => s.layout)
   const urls = useStore((s) => s.urls)
 
@@ -51,7 +51,7 @@ export default function Workspace() {
         transform: { ...DEFAULT_TRANSFORM },
       })
     } else if (data.source === 'cell') {
-      swapCells(data.index as number, targetIndex)
+      moveCell(data.index as number, targetIndex)
     }
   }
 

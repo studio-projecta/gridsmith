@@ -60,7 +60,7 @@ interface StoreState {
   setAutoSize: (on: boolean) => void
   setGridSize: (rows: number, cols: number) => void
   setCellSlot: (index: number, slot: CellSlot | null) => void
-  swapCells: (a: number, b: number) => void
+  moveCell: (from: number, to: number) => void
   updateCellTransform: (index: number, patch: Partial<CellTransform>) => void
   autoFill: () => void
   clearCells: () => void
@@ -254,13 +254,13 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ layout: next })
   },
 
-  swapCells: (a, b) => {
+  moveCell: (from, to) => {
     const layout = get().layout
-    if (!layout || a === b) return
+    if (!layout || from === to) return
+    // 끼워넣기(insert): from 을 빼서 to 위치에 삽입 → 사이 항목들이 밀린다(arrayMove).
     const cells = layout.cells.slice()
-    const tmp = cells[a]
-    cells[a] = cells[b]
-    cells[b] = tmp
+    const [moved] = cells.splice(from, 1)
+    cells.splice(to, 0, moved)
     const next = { ...layout, cells }
     persistLayout(next)
     set({ layout: next })
