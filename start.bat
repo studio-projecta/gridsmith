@@ -17,13 +17,14 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem Stop any previous server first so it doesn't lock node_modules during install.
+echo Stopping any running server on port 4173...
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr LISTENING ^| findstr :4173') do taskkill /F /PID %%p >nul 2>nul
+echo.
+
 echo [1/3] Installing dependencies...
-call npm ci
-if errorlevel 1 (
-  echo npm ci failed, falling back to npm install...
-  call npm install
-  if errorlevel 1 goto :error
-)
+call npm install
+if errorlevel 1 goto :error
 echo.
 
 echo [2/3] Building...
@@ -32,8 +33,6 @@ if errorlevel 1 goto :error
 echo.
 
 echo [3/3] Starting server ^(LAN accessible^)...
-echo   Freeing port 4173 if already in use...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr LISTENING ^| findstr :4173') do taskkill /F /PID %%p >nul 2>nul
 echo.
 echo   Local:   http://localhost:4173
 echo   Network: http://^<this-PC-IP^>:4173   ^(run "ipconfig" to find the IP^)
