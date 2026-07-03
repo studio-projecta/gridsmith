@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { cellRect, imageRect, clamp, type Rect } from '../src/lib/layout'
 import { computeAutoOutput, reflowCells } from '../src/types'
-import type { GridLayout, CellTransform, CellSlot } from '../src/types'
+import type { GridLayout, CellSlot } from '../src/types'
 
 function layout(patch: Partial<GridLayout>): GridLayout {
   return {
@@ -17,13 +17,6 @@ function layout(patch: Partial<GridLayout>): GridLayout {
     ...patch,
   }
 }
-
-const T = (p: Partial<CellTransform> = {}): CellTransform => ({
-  offsetX: 0,
-  offsetY: 0,
-  scale: 1,
-  ...p,
-})
 
 function eq(a: Rect, b: Rect) {
   expect(a.x).toBeCloseTo(b.x, 5)
@@ -58,27 +51,27 @@ test.describe('imageRect', () => {
   const cell: Rect = { x: 0, y: 0, w: 100, h: 100 }
 
   test('cover: 정사각 이미지가 셀을 정확히 채움', () => {
-    eq(imageRect(cell, 200, 200, 'cover', T()), { x: 0, y: 0, w: 100, h: 100 })
+    eq(imageRect(cell, 200, 200, 'cover', 'center'), { x: 0, y: 0, w: 100, h: 100 })
   })
 
   test('cover: 가로로 긴 이미지는 가로가 넘쳐 잘림', () => {
     // base = max(100/200, 100/100) = 1 → 200x100, 중앙정렬 → x=-50
-    eq(imageRect(cell, 200, 100, 'cover', T()), { x: -50, y: 0, w: 200, h: 100 })
+    eq(imageRect(cell, 200, 100, 'cover', 'center'), { x: -50, y: 0, w: 200, h: 100 })
   })
 
   test('contain: 가로로 긴 이미지는 안쪽에 레터박스', () => {
     // base = min(100/200, 100/100) = 0.5 → 100x50, 세로 중앙 → y=25
-    eq(imageRect(cell, 200, 100, 'contain', T()), { x: 0, y: 25, w: 100, h: 50 })
+    eq(imageRect(cell, 200, 100, 'contain', 'center'), { x: 0, y: 25, w: 100, h: 50 })
   })
 
-  test('scale: 배율 2배면 크기 2배(중앙 기준)', () => {
-    // base 0.5 * 2 = 1 → 200x200, 중앙 → x=-50
-    eq(imageRect(cell, 200, 200, 'cover', T({ scale: 2 })), { x: -50, y: -50, w: 200, h: 200 })
+  test('align top: 레터박스 이미지의 윗변을 셀 윗변에 맞춤', () => {
+    // contain 200x100 → 100x50 (셀보다 낮음), top → y=0
+    eq(imageRect(cell, 200, 100, 'contain', 'top'), { x: 0, y: 0, w: 100, h: 50 })
   })
 
-  test('offset: offsetX=1 이면 셀 폭의 절반만큼 우측 이동', () => {
-    // shift = 1 * 100/2 = 50 → x = 0 + 50
-    eq(imageRect(cell, 200, 200, 'cover', T({ offsetX: 1 })), { x: 50, y: 0, w: 100, h: 100 })
+  test('align bottom: 레터박스 이미지의 아랫변을 셀 아랫변에 맞춤', () => {
+    // contain 200x100 → 100x50, bottom → y = 100 - 50 = 50
+    eq(imageRect(cell, 200, 100, 'contain', 'bottom'), { x: 0, y: 50, w: 100, h: 50 })
   })
 })
 

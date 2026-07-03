@@ -9,6 +9,7 @@ interface Props {
   image: StoredImage | undefined
   url: string | undefined
   selected: boolean
+  dropHint: 'none' | 'move' | 'swap'
   onSelect: (index: number) => void
 }
 
@@ -19,11 +20,12 @@ export default function GridCell({
   image,
   url,
   selected,
+  dropHint,
   onSelect,
 }: Props) {
   const cell = cellRect(layout, index)
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef } = useDroppable({
     id: `cell-${index}`,
     data: { index },
   })
@@ -60,9 +62,11 @@ export default function GridCell({
   return (
     <div
       ref={setDropRef}
+      data-cell-idx={index}
       className={
         'grid-cell' +
-        (isOver ? ' over' : '') +
+        (dropHint === 'move' ? ' drop-move' : '') +
+        (dropHint === 'swap' ? ' drop-swap' : '') +
         (selected ? ' selected' : '') +
         (isDragging ? ' dragging' : '')
       }

@@ -34,6 +34,15 @@ export type FitMode = 'cover' | 'contain'
 /** 셀 안 이미지의 세로 정렬(전체 셀 일괄 적용). */
 export type VAlign = 'top' | 'center' | 'bottom'
 
+/**
+ * 드래그 중 드롭 조준 상태. 포인터가 셀 경계 근처면 insert(사이=밀기),
+ * 셀 중앙이면 cell(빈 칸=이동 / 있는 칸=자리바꿈).
+ * insert.index 는 읽기순서상 삽입 위치(0..N).
+ */
+export type DropIntent =
+  | { kind: 'insert'; index: number }
+  | { kind: 'cell'; index: number; mode: 'move' | 'swap' }
+
 /** 유형당 1개. cells 길이 = rows*cols, 행 우선(row-major). */
 export interface GridLayout {
   typeId: string

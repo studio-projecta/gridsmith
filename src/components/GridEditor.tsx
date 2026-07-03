@@ -1,11 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore'
+import { cellRect } from '../lib/layout'
+import type { GridLayout, DropIntent } from '../types'
 import GridCell from './GridCell'
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 4
 
-export default function GridEditor() {
+/** 삽입 조준선(사이=밀기)의 위치를 출력 좌표계 → % 로 변환. index==N 이면 마지막 셀의 오른쪽 경계. */
+function insertLineStyle(layout: GridLayout, index: number): React.CSSProperties {
+  const atEnd = index >= layout.cells.length
+  const r = cellRect(layout, atEnd ? layout.cells.length - 1 : index)
+  const x = atEnd ? r.x + r.w : r.x
+  return {
+    left: `${(x / layout.outputWidth) * 100}%`,
+    top: `${(r.y / layout.outputHeight) * 100}%`,
+    height: `${(r.h / layout.outputHeight) * 100}%`,
+  }
+}
+
+export default function GridEditor({ dropIntent }: { dropIntent?: DropIntent | null }) {
   const layout = useStore((s) => s.layout)
   const images = useStore((s) => s.images)
   const urls = useStore((s) => s.urls)
@@ -100,6 +114,8 @@ export default function GridEditor() {
         >
           {layout.cells.map((slot, i) => {
             const image = slot ? imgMap.get(slot.imageId) : undefined
+            const dropHint =
+              dropIntent?.kind === 'cell' && dropIntent.index === i ? dropIntent.mode : 'none'
             return (
               <GridCell
                 key={i}
@@ -109,10 +125,14 @@ export default function GridEditor() {
                 image={image}
                 url={slot ? urls[slot.imageId] : undefined}
                 selected={selectedCell === i}
+                dropHint={dropHint}
                 onSelect={(idx) => setSelectedCell(idx)}
               />
             )
           })}
+          {dropIntent?.kind === 'insert' && (
+            <div className="insert-line" style={insertLineStyle(layout, dropIntent.index)} />
+          )}
         </div>
       </div>
 

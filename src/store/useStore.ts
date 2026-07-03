@@ -35,6 +35,25 @@ function uid(): string {
   )
 }
 
+/**
+ * index 위치에 slot 을 끼워넣고 이후 셀들을 뒤로 민다.
+ * 삽입 지점 이후 첫 빈 칸을 먼저 제거해 밀기를 흡수하므로, 빈 칸이 있으면 그리드가 커지지 않는다.
+ * 흡수할 빈 칸이 없어 길이가 넘치면 reflowCells 가 행을 늘려 밀려난 이미지를 보존한다(never-lose).
+ */
+function insertWithPush(
+  cells: (CellSlot | null)[],
+  index: number,
+  slot: CellSlot,
+  rows: number,
+  cols: number,
+): { rows: number; cells: (CellSlot | null)[] } {
+  const next = cells.slice()
+  const hole = next.findIndex((c, i) => i >= index && c == null)
+  if (hole !== -1) next.splice(hole, 1)
+  next.splice(index, 0, slot)
+  return reflowCells(next, rows, cols)
+}
+
 interface StoreState {
   types: GroupType[]
   selectedTypeId: string | null
@@ -57,7 +76,10 @@ interface StoreState {
   setAutoSize: (on: boolean) => void
   setGridSize: (rows: number, cols: number) => void
   setCellSlot: (index: number, slot: CellSlot | null) => void
-  moveCell: (from: number, to: number) => void
+  insertCellSlot: (index: number, slot: CellSlot) => void
+  moveCellInsert: (from: number, insertIndex: number) => void
+  moveCellTo: (from: number, to: number) => void
+  swapCells: (a: number, b: number) => void
   placeInNextEmpty: (imageId: string) => void
   autoFill: () => void
   clearCells: () => void
@@ -257,13 +279,48 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ layout: next })
   },
 
-  moveCell: (from, to) => {
+  insertCellSlot: (index, slot) => {
+    const layout = get().layout
+    if (!layout) return
+    const { rows, cells } = insertWithPush(layout.cells, index, slot, layout.rows, layout.cols)
+    const next = withAutoSize({ ...layout, rows, cells }, get().images)
+    persistLayout(next)
+    set({ layout: next })
+  },
+
+  // 셀 사이(경계)에 드롭: 원본 셀을 빼서 삽입 위치에 끼워넣고 이후 셀들을 뒤로 민다.
+  moveCellInsert: (from, insertIndex) => {
+    const layout = get().layout
+    if (!layout) return
+    const base = layout.cells.slice()
+    const [moved] = base.splice(from, 1)
+    if (!moved) return
+    // from 제거로 그 뒤 인덱스가 한 칸 당겨지므로 삽입 위치를 보정한다.
+    const index = insertIndex > from ? insertIndex - 1 : insertIndex
+    const { rows, cells } = insertWithPush(base, index, moved, layout.rows, layout.cols)
+    const next = withAutoSize({ ...layout, rows, cells }, get().images)
+    persistLayout(next)
+    set({ layout: next })
+  },
+
+  // 빈 칸에 드롭: 원본을 그 칸으로 옮기고 원래 칸은 비운다(다른 셀은 그대로).
+  moveCellTo: (from, to) => {
     const layout = get().layout
     if (!layout || from === to) return
-    // 끼워넣기(insert): from 을 빼서 to 위치에 삽입 → 사이 항목들이 밀린다(arrayMove).
     const cells = layout.cells.slice()
-    const [moved] = cells.splice(from, 1)
-    cells.splice(to, 0, moved)
+    cells[to] = cells[from]
+    cells[from] = null
+    const next = withAutoSize({ ...layout, cells }, get().images)
+    persistLayout(next)
+    set({ layout: next })
+  },
+
+  // 있는 칸에 드롭: 두 셀의 내용을 맞바꾼다(각자의 transform 도 함께 이동).
+  swapCells: (a, b) => {
+    const layout = get().layout
+    if (!layout || a === b) return
+    const cells = layout.cells.slice()
+    ;[cells[a], cells[b]] = [cells[b], cells[a]]
     const next = withAutoSize({ ...layout, cells }, get().images)
     persistLayout(next)
     set({ layout: next })

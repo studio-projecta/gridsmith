@@ -29,15 +29,12 @@ test('end-to-end: 유형 생성 → 업로드 → 배치 → 내보내기 → �
   ])
   await expect(page.locator('.tray-list .thumb')).toHaveCount(4)
 
-  // 3) 그리드/출력/배경 설정: 2x2, gap 20, 400x400, 배경 magenta
-  // 출력 크기를 직접 지정하려면 자동 맞춤을 먼저 끈다.
-  await page.getByRole('checkbox', { name: /자동 맞춤/ }).uncheck()
-  const nums = page.getByRole('spinbutton') // [rows, cols, gap, outW, outH]
+  // 3) 그리드/배경 설정: 2x2, gap 20, 배경 magenta.
+  // 출력 크기는 자동 맞춤(첫 이미지 200x200 × 2x2 + gap 20*3 = 460x460).
+  const nums = page.getByRole('spinbutton') // [rows, cols, gap]
   await nums.nth(0).fill('2')
   await nums.nth(1).fill('2')
   await nums.nth(2).fill('20')
-  await nums.nth(3).fill('400')
-  await nums.nth(4).fill('400')
   await page.locator('input[type=color]').evaluate((el: HTMLInputElement) => {
     // React 는 native value 트래커로 변경을 감지하므로 prototype setter 를 사용.
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
@@ -52,10 +49,13 @@ test('end-to-end: 유형 생성 → 업로드 → 배치 → 내보내기 → �
   // 저장 디바운스(300ms) 플러시 대기
   await page.waitForTimeout(500)
 
-  // 5) 내보내기 → 다운로드 캡처
+  // 5) 내보내기 모달 열기 → 기본 크기(460x460)로 다운로드 캡처
+  await page.locator('.export-group').getByRole('button').click()
+  const modal = page.locator('.export-modal')
+  await expect(modal).toBeVisible()
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: /내보내기/ }).click(),
+    modal.getByRole('button', { name: /내보내기/ }).click(),
   ])
   const filePath = await download.path()
   expect(filePath).toBeTruthy()
@@ -79,15 +79,15 @@ test('end-to-end: 유형 생성 → 업로드 → 배치 → 내보내기 → �
     return {
       w: img.naturalWidth,
       h: img.naturalHeight,
-      bg: px(5, 5), // 바깥 여백 → 배경색
-      cell0: px(105, 105), // 셀0(top-left) 중앙 → 첫 이미지(red)
-      cell1: px(295, 105), // 셀1(top-right) 중앙 → 두번째(green)
+      bg: px(5, 5), // 바깥 여백(gap 20) → 배경색
+      cell0: px(120, 120), // 셀0(top-left) 중앙 → 첫 이미지(red)
+      cell1: px(340, 120), // 셀1(top-right) 중앙 → 두번째(green)
     }
   }, `data:image/png;base64,${b64}`)
 
-  // 출력 크기 == 설정값
-  expect(result.w).toBe(400)
-  expect(result.h).toBe(400)
+  // 출력 크기 == 자동 계산값(460x460)
+  expect(result.w).toBe(460)
+  expect(result.h).toBe(460)
   // 배경색 magenta
   expect(near(result.bg, [255, 0, 255, 255])).toBeTruthy()
   // 배치/순서: 셀0=red, 셀1=green

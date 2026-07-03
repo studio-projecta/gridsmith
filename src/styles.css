@@ -438,11 +438,6 @@ select {
   transition: outline-color 0.12s;
 }
 
-.grid-cell.over {
-  outline: 2px solid var(--accent);
-  z-index: 2;
-}
-
 .grid-cell.selected {
   outline: 2px solid var(--success);
   z-index: 3;
@@ -450,6 +445,32 @@ select {
 
 .grid-cell.dragging {
   opacity: 0.4;
+}
+
+/* 드롭 조준 표시는 선택/드래그 상태보다 우선해 보여야 하므로 뒤에 정의(동일 특이도 → 나중 규칙 승리). */
+/* 빈 칸 조준: 여기로 옮김 */
+.grid-cell.drop-move {
+  outline: 2px solid var(--accent);
+  background: var(--accent-soft);
+  z-index: 4;
+}
+
+/* 있는 칸 조준: 서로 자리 바꿈 */
+.grid-cell.drop-swap {
+  outline: 2px solid #f59e0b;
+  z-index: 4;
+}
+
+/* 셀 사이 조준: 여기에 끼워넣고 뒤로 밀기 */
+.insert-line {
+  position: absolute;
+  width: 4px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+  z-index: 5;
+  pointer-events: none;
 }
 
 .cell-img-wrap {
