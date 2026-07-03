@@ -26,6 +26,41 @@ function sameIntent(a: DropIntent | null, b: DropIntent | null): boolean {
   return a.kind === 'cell' && b.kind === 'cell' ? a.mode === b.mode : true
 }
 
+// 포인터가 여백/셀 간격 위로 벗어나도 사이 조준을 유지할 여유(px).
+const HIT_TOLERANCE = 28
+
+/**
+ * 포인터가 놓인 셀(없으면 그리드 영역 안에서 가장 가까운 셀)을 찾는다.
+ * dnd-kit 의 over 는 드래그 노드 rect 겹침으로 결정돼 포인터와 어긋나므로,
+ * 좌/우 가장자리·바깥 여백에서 조준이 끊기지 않도록 포인터 좌표로 직접 판정한다.
+ */
+function pickCell(pointer: { x: number; y: number }): { index: number; rect: DOMRect } | null {
+  const container = document.querySelector<HTMLElement>('.grid-container')
+  if (!container) return null
+  const cb = container.getBoundingClientRect()
+  if (
+    pointer.x < cb.left - HIT_TOLERANCE ||
+    pointer.x > cb.right + HIT_TOLERANCE ||
+    pointer.y < cb.top - HIT_TOLERANCE ||
+    pointer.y > cb.bottom + HIT_TOLERANCE
+  ) {
+    return null
+  }
+  let best: { index: number; rect: DOMRect } | null = null
+  let bestDist = Infinity
+  for (const el of container.querySelectorAll<HTMLElement>('[data-cell-idx]')) {
+    const rect = el.getBoundingClientRect()
+    const dx = Math.max(rect.left - pointer.x, 0, pointer.x - rect.right)
+    const dy = Math.max(rect.top - pointer.y, 0, pointer.y - rect.bottom)
+    const dist = dx * dx + dy * dy
+    if (dist < bestDist) {
+      bestDist = dist
+      best = { index: Number(el.dataset.cellIdx), rect }
+    }
+  }
+  return best
+}
+
 export default function Workspace() {
   const insertCellSlot = useStore((s) => s.insertCellSlot)
   const setCellSlot = useStore((s) => s.setCellSlot)
@@ -89,19 +124,23 @@ export default function Workspace() {
   }
 
   const handleMove = (e: DragMoveEvent) => {
-    const overIndex = e.over?.data.current?.index as number | undefined
-    if (overIndex == null || !layout) {
+    const pointer = pointerRef.current
+    if (!layout || !pointer) {
       setIntent(null)
       return
     }
-    const source = e.active.data.current?.source as 'tray' | 'cell' | undefined
-    const el = document.querySelector<HTMLElement>(`[data-cell-idx="${overIndex}"]`)
-    const pointer = pointerRef.current
-    let frac = 0.5
-    if (el && pointer) {
-      const rect = el.getBoundingClientRect()
-      frac = rect.width > 0 ? (pointer.x - rect.left) / rect.width : 0.5
+    const picked = pickCell(pointer)
+    if (!picked) {
+      setIntent(null)
+      return
     }
+    const overIndex = picked.index
+    const source = e.active.data.current?.source as 'tray' | 'cell' | undefined
+    // 좌/우 가장자리로 사이를 판정한다: 셀 좌측=그 셀 앞, 우측=그 셀 뒤(읽기순서).
+    // 여백 위(frac<0 또는 >1)에서도 끝 판정이 그대로 이어지도록 clamp 하지 않는다.
+    // 1열이면 모든 셀이 행의 첫 셀이라 좌측 타겟이 곧 그 행 위(이전 행 마지막과의 사이)가 된다.
+    const rect = picked.rect
+    const frac = rect.width > 0 ? (pointer.x - rect.left) / rect.width : 0.5
 
     if (frac < EDGE_FRACTION) {
       setIntent({ kind: 'insert', index: overIndex })
