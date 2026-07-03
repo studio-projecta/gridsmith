@@ -78,20 +78,19 @@ export default function ImageTray() {
   return (
     <div className="tray">
       <div className="tray-head">
-        <span>이미지</span>
-        <span className="tray-head-right">
-          <button
-            className="tray-zip"
-            title="현재 유형 이미지 전체를 ZIP 으로 다운로드"
-            disabled={images.length === 0}
-            onClick={() => void exportImagesZip(images, typeName)}
-          >
-            ⬇ ZIP
-          </button>
+        <span className="tray-title">
+          이미지
           <span className="count">{placedCount} / {images.length}</span>
         </span>
+        <button
+          className="tray-zip"
+          title="현재 유형 이미지 전체를 ZIP 으로 다운로드"
+          disabled={images.length === 0}
+          onClick={() => void exportImagesZip(images, typeName)}
+        >
+          ⬇ ZIP
+        </button>
       </div>
-      <div className="tray-hint">클릭=다음 빈 칸 · 드래그=지정 셀</div>
       <div className="tray-list">
         {images.map((img) => (
           <TrayThumb

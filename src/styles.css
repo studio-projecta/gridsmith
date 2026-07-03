@@ -223,6 +223,10 @@ select {
   white-space: nowrap;
 }
 
+.tb-actions {
+  margin-left: auto;
+}
+
 .tb-actions button {
   padding: 8px 14px;
   border: 1px solid var(--border-strong);
@@ -370,17 +374,25 @@ select {
 }
 
 .export-btn {
-  background: var(--success) !important;
-  color: #fff;
-  border-color: var(--success) !important;
+  padding: 8px 16px;
+  background: var(--accent) !important;
+  color: #fff !important;
+  border: 1px solid var(--accent) !important;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.18), 0 4px 12px rgba(37, 99, 235, 0.26);
+  transition: background 0.15s, box-shadow 0.15s;
 }
 
 .export-btn:hover:not(:disabled) {
-  filter: brightness(0.95);
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2), 0 6px 16px rgba(37, 99, 235, 0.32);
 }
 
 .export-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
+  box-shadow: none;
   cursor: default;
 }
 
@@ -826,7 +838,15 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.tray-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
 .tray-head .count {
@@ -837,13 +857,6 @@ select {
   font-weight: 600;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-}
-
-.tray-hint {
-  font-weight: 400;
-  font-size: 11px;
-  color: var(--muted);
-  margin: -4px 0 2px;
 }
 
 .tray-list {
@@ -964,12 +977,6 @@ select {
 .ghost-btn:disabled {
   opacity: 0.5;
   cursor: default;
-}
-
-.tray-head-right {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .tray-zip {
