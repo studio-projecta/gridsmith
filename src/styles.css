@@ -153,8 +153,8 @@ select {
 
 .toolbar {
   display: flex;
-  align-items: center;
-  gap: 10px 12px;
+  align-items: stretch;
+  gap: 10px 18px;
   flex-wrap: wrap;
   padding: 10px 14px;
   background: var(--surface);
@@ -163,10 +163,65 @@ select {
   box-shadow: var(--shadow-sm);
 }
 
+/* 기하 묶음(왼쪽)과 나눔선을 세로로 꽉 채워, 오른쪽 컨트롤 2줄과 높이를 맞춘다. */
+.toolbar > .tb-divider {
+  align-self: stretch;
+  height: auto;
+}
+
+.tb-geo {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+/* 오른쪽 컨트롤: 기하 묶음 높이에 맞춰 2줄을 세로 중앙 정렬. */
+.tb-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+
 .tb-group {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 라벨 붙은 입력 묶음: 캡션 아래에 짝(행·열 / 가로·세로)을 위·아래로 쌓는다. */
+.tb-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tb-cluster-cap {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tb-cluster-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* 각 짝 입력의 소제목(행/열/가로/세로). 폭을 고정해 위·아래 입력이 세로로 정렬된다. */
+.tb-sub {
+  min-width: 26px;
+  color: var(--text-2);
+  font-size: 12px;
 }
 
 .tb-divider {
@@ -546,6 +601,88 @@ select {
   text-align: center;
 }
 
+.fine-tune {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 10px;
+}
+
+.fine-tune-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fine-tune-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* 항목을 정렬된 열로 채워 화면폭 변화에 반듬하게 리플로우(제멋대로 줄바꿈 방지). */
+.ft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 20px;
+}
+
+.ft-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.ft-label {
+  width: 66px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.ft-num {
+  width: 58px;
+  flex: none;
+  padding: 5px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 슬라이더가 열의 남은 폭을 채워, 모든 행의 트랙 길이가 정렬된다. */
+.ft-field input[type="range"] {
+  flex: 1;
+  min-width: 70px;
+  accent-color: var(--accent);
+}
+
+.ft-reset {
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.ft-reset:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.ft-reset:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .grid-container {
   position: relative;
   width: calc(min(64vh, 100%) * var(--zoom, 1));
@@ -618,7 +755,8 @@ select {
 
 .cell-img-wrap {
   position: absolute;
-  inset: 0;
+  /* 안쪽 여백이 적용된 콘텐츠 영역(GridCell 이 left/top/width/height 를 인라인 지정). */
+  overflow: hidden;
 }
 
 .cell-img-wrap img {

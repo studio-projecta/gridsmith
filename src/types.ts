@@ -15,7 +15,7 @@ export interface StoredImage {
   height: number
 }
 
-/** 셀 내 이미지 미세 이동/확대. */
+/** 셀 내 이미지 미세 이동/확대/안쪽 여백. */
 export interface CellTransform {
   /** -1..1, 셀 폭 기준 정규화 오프셋. */
   offsetX: number
@@ -23,6 +23,10 @@ export interface CellTransform {
   offsetY: number
   /** 1 = fit(cover/contain) 기준 배율. */
   scale: number
+  /** 이 셀만 추가로 주는 좌우 안쪽 여백(출력 px). 전역 cellPadX 에 더해진다. 없으면 0(과거 데이터). */
+  padX?: number
+  /** 이 셀만 추가로 주는 상하 안쪽 여백(출력 px). 전역 cellPadY 에 더해진다. 없으면 0(과거 데이터). */
+  padY?: number
 }
 
 export interface CellSlot {
@@ -57,6 +61,13 @@ export interface GridLayout {
   /** 셀 간격(출력 px 기준). marginX/Y 미지정 시 바깥 여백에도 적용. */
   gap: number
   /**
+   * 셀 안쪽 여백(출력 px, 모든 셀 공통). 이미지 배치 영역을 안쪽으로 좁혀
+   * 이미지와 셀 경계 사이에 배경이 보이게 한다. 셀 크기(cellRect)·출력 크기에는 영향 없음.
+   * 없으면 0(과거 레이아웃 호환). 셀별 추가 여백은 CellTransform.padX/Y.
+   */
+  cellPadX?: number
+  cellPadY?: number
+  /**
    * 바깥 여백(출력 px). marginX=좌우, marginY=상하.
    * 미지정이면 gap 을 바깥 여백으로 쓴다. 지정하면 셀 간 gap 과 독립적으로 바깥만 이 크기로 비워,
    * gap 이 달라도 바깥 라인이 여백값으로 고정된다.
@@ -84,6 +95,8 @@ export const DEFAULT_TRANSFORM: CellTransform = {
   offsetX: 0,
   offsetY: 0,
   scale: 1,
+  padX: 0,
+  padY: 0,
 }
 
 export function makeDefaultLayout(typeId: string): GridLayout {

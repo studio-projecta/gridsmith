@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore'
 import { cellRect } from '../lib/layout'
 import type { GridLayout, DropIntent } from '../types'
 import GridCell from './GridCell'
+import FineTunePanel from './FineTunePanel'
 
 const ZOOM_MIN = 0.25
 const ZOOM_MAX = 4
@@ -99,6 +100,8 @@ export default function GridEditor({ dropIntent }: { dropIntent?: DropIntent | n
         </button>
       </div>
 
+      <FineTunePanel />
+
       <div className="grid-scroll">
         <div
           ref={containerRef}
@@ -156,7 +159,7 @@ export default function GridEditor({ dropIntent }: { dropIntent?: DropIntent | n
       </div>
 
       <p className="grid-hint">
-        Ctrl/⌘ + 휠 로 확대·축소 · 셀 선택 후 Delete/Backspace 로 비우기
+        Ctrl/⌘ + 휠 로 확대·축소 · 셀 선택 후 미세조정/Delete·Backspace 로 비우기
       </p>
     </div>
   )

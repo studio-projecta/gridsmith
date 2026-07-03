@@ -1,4 +1,4 @@
-import type { GridLayout, CellSlot, FitMode, VAlign } from '../types'
+import type { GridLayout, CellSlot, CellTransform, FitMode, VAlign } from '../types'
 
 export interface Rect {
   x: number
@@ -25,9 +25,24 @@ export function cellRect(layout: GridLayout, index: number): Rect {
 }
 
 /**
+ * 셀 안쪽 여백을 적용한 이미지 배치 영역(출력 px). 여백 = 전역 cellPadX/Y + 셀별 transform.padX/Y.
+ * 이미지는 이 영역 기준으로 fit/align/scale/offset 이 계산되고 이 영역으로 클립돼, 바깥은 배경이 보인다.
+ * 여백이 셀을 삼켜 폭/높이가 0 이하가 되지 않도록 각 축에서 최소 1px 콘텐츠를 남긴다.
+ */
+export function cellContentRect(layout: GridLayout, index: number, transform?: CellTransform): Rect {
+  const cell = cellRect(layout, index)
+  const padX = (layout.cellPadX ?? 0) + (transform?.padX ?? 0)
+  const padY = (layout.cellPadY ?? 0) + (transform?.padY ?? 0)
+  const ipx = Math.min(Math.max(padX, 0), (cell.w - 1) / 2)
+  const ipy = Math.min(Math.max(padY, 0), (cell.h - 1) / 2)
+  return { x: cell.x + ipx, y: cell.y + ipy, w: cell.w - 2 * ipx, h: cell.h - 2 * ipy }
+}
+
+/**
  * 셀 안에 그릴 이미지의 사각형(출력 px 좌표계).
- * fit(cover/contain) 기준 배율로 맞추고, 가로는 중앙, 세로는 align(top/center/bottom) 으로
- * 정렬한다. align 은 그리드 전역값이라 모든 셀에 동일하게 적용된다.
+ * fit(cover/contain) 기준 base 배율에 transform.scale 을 곱하고, 세로는 align(top/center/bottom)
+ * 으로 정렬한 뒤 transform 의 offsetX/Y(-1..1) 로 셀 절반 기준 평행이동(미세조정)한다.
+ * align 은 그리드 전역값이라 모든 셀에 동일하게 적용되고, transform 은 셀별 미세조정값이다.
  * 편집 미리보기(DOM)와 Canvas 합성이 이 함수를 공유해 WYSIWYG 를 보장한다.
  */
 export function imageRect(
@@ -36,21 +51,27 @@ export function imageRect(
   imgH: number,
   fit: FitMode,
   align: VAlign = 'center',
+  transform?: CellTransform,
 ): Rect {
+  const scale = transform?.scale ?? 1
+  const offsetX = transform?.offsetX ?? 0
+  const offsetY = transform?.offsetY ?? 0
   const base =
     fit === 'cover'
       ? Math.max(cell.w / imgW, cell.h / imgH)
       : Math.min(cell.w / imgW, cell.h / imgH)
-  const dw = imgW * base
-  const dh = imgH * base
+  const dw = imgW * base * scale
+  const dh = imgH * base * scale
   // align 으로 이미지 세로 위치를 정한다: top=이미지 윗변을 셀 윗변에, bottom=아랫변을 셀 아랫변에.
-  const cy =
+  const alignCy =
     align === 'top'
       ? cell.y + dh / 2
       : align === 'bottom'
         ? cell.y + cell.h - dh / 2
         : cell.y + cell.h / 2
-  const cx = cell.x + cell.w / 2
+  // offset(-1..1) 은 셀 절반 기준이라 ×(cell.w/2), ×(cell.h/2).
+  const cx = cell.x + cell.w / 2 + (offsetX * cell.w) / 2
+  const cy = alignCy + (offsetY * cell.h) / 2
   return { x: cx - dw / 2, y: cy - dh / 2, w: dw, h: dh }
 }
 

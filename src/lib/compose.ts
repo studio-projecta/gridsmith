@@ -1,5 +1,5 @@
 import type { GridLayout, StoredImage } from '../types'
-import { cellRect, imageRect } from './layout'
+import { cellContentRect, imageRect } from './layout'
 
 /**
  * 레이아웃을 outputWidth×outputHeight 캔버스에 합성해 Blob 으로 반환.
@@ -33,12 +33,13 @@ export async function composeToBlob(
     if (!meta) continue
 
     const bitmap = await createImageBitmap(meta.blob)
-    const cell = cellRect(layout, i)
-    const ir = imageRect(cell, meta.width, meta.height, layout.fit, layout.align)
+    // 안쪽 여백을 반영한 콘텐츠 영역으로 배치·클립해 미리보기와 동일하게 여백 바깥은 배경이 남는다.
+    const content = cellContentRect(layout, i, slot.transform)
+    const ir = imageRect(content, meta.width, meta.height, layout.fit, layout.align, slot.transform)
 
     ctx.save()
     ctx.beginPath()
-    ctx.rect(cell.x, cell.y, cell.w, cell.h)
+    ctx.rect(content.x, content.y, content.w, content.h)
     ctx.clip()
     ctx.drawImage(bitmap, ir.x, ir.y, ir.w, ir.h)
     ctx.restore()

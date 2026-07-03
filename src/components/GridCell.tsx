@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { GridLayout, StoredImage, CellSlot } from '../types'
-import { cellRect, imageRect } from '../lib/layout'
+import { cellRect, cellContentRect, imageRect } from '../lib/layout'
 
 interface Props {
   index: number
@@ -47,15 +47,25 @@ export default function GridCell({
   const wPct = (cell.w / layout.outputWidth) * 100
   const hPct = (cell.h / layout.outputHeight) * 100
 
+  // 안쪽 여백을 반영한 콘텐츠 영역: 래퍼는 이 영역(셀 대비 %)으로 축소돼 이미지를 클립하고,
+  // 이미지는 콘텐츠 영역 기준으로 배치된다. 여백 바깥은 배경이 비친다.
+  let wrapStyle: React.CSSProperties | null = null
   let imgStyle: React.CSSProperties | null = null
   if (image && slot) {
-    const ir = imageRect(cell, image.width, image.height, layout.fit, layout.align)
+    const content = cellContentRect(layout, index, slot.transform)
+    const ir = imageRect(content, image.width, image.height, layout.fit, layout.align, slot.transform)
+    wrapStyle = {
+      left: `${((content.x - cell.x) / cell.w) * 100}%`,
+      top: `${((content.y - cell.y) / cell.h) * 100}%`,
+      width: `${(content.w / cell.w) * 100}%`,
+      height: `${(content.h / cell.h) * 100}%`,
+    }
     imgStyle = {
       position: 'absolute',
-      left: `${((ir.x - cell.x) / cell.w) * 100}%`,
-      top: `${((ir.y - cell.y) / cell.h) * 100}%`,
-      width: `${(ir.w / cell.w) * 100}%`,
-      height: `${(ir.h / cell.h) * 100}%`,
+      left: `${((ir.x - content.x) / content.w) * 100}%`,
+      top: `${((ir.y - content.y) / content.h) * 100}%`,
+      width: `${(ir.w / content.w) * 100}%`,
+      height: `${(ir.h / content.h) * 100}%`,
     }
   }
 
@@ -82,7 +92,13 @@ export default function GridCell({
       }}
     >
       {image && url ? (
-        <div className="cell-img-wrap" ref={setDragRef} {...listeners} {...attributes}>
+        <div
+          className="cell-img-wrap"
+          ref={setDragRef}
+          style={wrapStyle ?? undefined}
+          {...listeners}
+          {...attributes}
+        >
           <img src={url} alt="" draggable={false} style={imgStyle ?? undefined} />
         </div>
       ) : (

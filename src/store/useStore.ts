@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GroupType, StoredImage, GridLayout, CellSlot } from '../types'
+import type { GroupType, StoredImage, GridLayout, CellSlot, CellTransform } from '../types'
 import { DEFAULT_TRANSFORM, makeDefaultLayout, reflowCells, computeAutoOutput } from '../types'
 import { decodeMeta } from '../lib/thumb'
 import * as db from '../db/idb'
@@ -80,6 +80,7 @@ interface StoreState {
   setAutoSize: (on: boolean) => void
   setGridSize: (rows: number, cols: number) => void
   setCellSlot: (index: number, slot: CellSlot | null) => void
+  updateCellTransform: (index: number, patch: Partial<CellTransform>) => void
   insertCellSlot: (index: number, slot: CellSlot) => void
   moveCellInsert: (from: number, insertIndex: number) => void
   moveCellTo: (from: number, to: number) => void
@@ -307,6 +308,19 @@ export const useStore = create<StoreState>((set, get) => ({
     const cells = layout.cells.slice()
     cells[index] = slot
     const next = withAutoSize({ ...layout, cells }, get().images)
+    persistLayout(next)
+    set({ layout: next })
+  },
+
+  // 선택 셀 이미지의 미세조정(배율·offset)만 갱신. autoSize 는 이미지 원본 크기 기준이라 영향 없음.
+  updateCellTransform: (index, patch) => {
+    const layout = get().layout
+    if (!layout) return
+    const slot = layout.cells[index]
+    if (!slot) return
+    const cells = layout.cells.slice()
+    cells[index] = { ...slot, transform: { ...slot.transform, ...patch } }
+    const next = { ...layout, cells }
     persistLayout(next)
     set({ layout: next })
   },
