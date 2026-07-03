@@ -64,6 +64,7 @@ interface StoreState {
   selectedCell: number | null
 
   init: () => Promise<void>
+  refresh: () => Promise<void>
   selectType: (id: string) => Promise<void>
   addType: (name: string) => Promise<void>
   renameType: (id: string, name: string) => Promise<void>
@@ -140,6 +141,15 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ types })
     const last = localStorage.getItem(LAST_TYPE_KEY)
     const target = types.find((t) => t.id === last) ?? types[0]
+    if (target) await get().selectType(target.id)
+  },
+
+  // 백업 가져오기 후 유형 목록을 다시 읽고 현재(또는 첫) 유형을 재선택해 화면을 갱신한다.
+  refresh: async () => {
+    const types = await db.getTypes()
+    set({ types })
+    const cur = get().selectedTypeId
+    const target = types.find((t) => t.id === cur) ?? types[0]
     if (target) await get().selectType(target.id)
   },
 

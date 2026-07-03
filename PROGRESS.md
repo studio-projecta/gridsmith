@@ -9,6 +9,7 @@
 
 - **스택**: React 18 + Vite + TypeScript, Zustand(상태), @dnd-kit(드래그), idb(IndexedDB), Canvas(합성)
 - **저장**: IndexedDB object store 3개 — `types`, `images`(Blob 포함), `layouts`(typeId 키)
+- **백업/복원**: 전체 상태를 의존성 없는 STORE ZIP(`src/lib/zip.ts`) 한 파일로 내보내기·가져오기(`src/lib/backup.ts`). 가져오기는 ID 재발급 후 참조 remap 하는 병합 방식. 현재 유형 이미지만 ZIP으로 내려받는 기능도 동일 유틸 사용.
 - **핵심 설계**: 편집 미리보기(DOM)와 내보내기(Canvas)가 동일한 배치 수식(`src/lib/layout.ts`)을 공유 → WYSIWYG 보장
 - **드래그 2종**: 툴바 모드 토글 — "재배치"(셀 스왑) / "미세조정"(셀 내 offset·scale)
 
