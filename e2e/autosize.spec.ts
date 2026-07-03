@@ -29,11 +29,11 @@ test('자동 맞춤: 출력 크기가 첫 이미지 원본 × 그리드로 계�
   await page.getByRole('button', { name: '자동 채우기' }).click()
   await expect(page.locator('.grid-cell img')).toHaveCount(1)
 
-  // 현재 구성 힌트에 계산된 출력 크기가 표시된다. 100x80, 3열 2행 → 300 x 160.
-  const hint = page.getByText(/현재 구성/)
-  await expect(hint).toContainText('300×160')
+  // 툴바 리드아웃에 계산된 출력 크기가 표시된다. 100x80, 3열 2행 → 300 x 160.
+  const readout = page.locator('.tb-readout')
+  await expect(readout).toContainText('300×160')
 
   // 그리드 변경 시 재계산: 열 3 → 4 이면 폭 400.
   await nums.nth(1).fill('4')
-  await expect(hint).toContainText('400×160')
+  await expect(readout).toContainText('400×160')
 })

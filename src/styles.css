@@ -154,18 +154,76 @@ select {
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 10px 12px;
   flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
 }
 
-.toolbar-actions {
+.tb-group {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.toolbar-actions button {
+.tb-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  flex: none;
+}
+
+.tb-spacer {
+  flex: 1 1 auto;
+}
+
+.tb-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.tb-field input[type="number"],
+.tb-field select {
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tb-field input[type="number"] {
+  width: 54px;
+}
+
+.tb-group input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: none;
+}
+
+.tb-group input[type="color"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tb-readout {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tb-actions button {
   padding: 8px 14px;
   border: 1px solid var(--border-strong);
   border-radius: 8px;
@@ -175,7 +233,7 @@ select {
   transition: background 0.15s, border-color 0.15s;
 }
 
-.toolbar-actions button:hover {
+.tb-actions button:hover {
   background: var(--surface-2);
 }
 
@@ -326,11 +384,18 @@ select {
   cursor: default;
 }
 
-.editor-row {
+.work-body {
   display: grid;
-  grid-template-columns: 1fr 268px;
+  grid-template-columns: 170px 1fr;
   gap: 16px;
   align-items: start;
+}
+
+.tray-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
 }
 
 /* ---- grid stage ---- */
@@ -504,33 +569,7 @@ select {
   pointer-events: none;
 }
 
-/* ---- controls panel ---- */
-.controls {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  box-shadow: var(--shadow-sm);
-}
-
-.controls section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.controls h3 {
-  margin: 0 0 2px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
-
+/* ---- controls (export modal) ---- */
 .field {
   display: flex;
   align-items: center;
@@ -726,13 +765,15 @@ select {
 .uploader {
   border: 2px dashed var(--border-strong);
   border-radius: 12px;
-  padding: 20px;
+  padding: 14px 10px;
   text-align: center;
   color: var(--text-2);
   background: var(--surface);
   cursor: pointer;
   user-select: none;
   font-weight: 500;
+  font-size: 13px;
+  line-height: 1.5;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
@@ -743,39 +784,39 @@ select {
   color: var(--accent);
 }
 
-/* ---- tray ---- */
+/* ---- tray (좌측 세로 컬럼) ---- */
 .tray-head {
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .tray-head .count {
-  display: inline-block;
-  margin-left: 8px;
   background: var(--accent-soft);
   color: var(--accent);
   border-radius: 10px;
   padding: 1px 9px;
   font-weight: 600;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .tray-hint {
-  margin-left: 10px;
   font-weight: 400;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
+  margin: -4px 0 2px;
 }
 
 .tray-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  /* 74px 썸네일 약 3줄분에서 멈추고 스크롤 → 이미지가 많아도 그리드를 밀어내지 않는다. */
-  max-height: 250px;
+  /* 좌측 컬럼에서 세로로 흐르며, 많아지면 스크롤 → 그리드 높이를 밀어내지 않는다. */
+  max-height: calc(100vh - 320px);
   overflow-y: auto;
 }
 

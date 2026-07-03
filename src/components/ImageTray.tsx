@@ -74,9 +74,10 @@ export default function ImageTray() {
   return (
     <div className="tray">
       <div className="tray-head">
-        업로드한 이미지 <span className="count">배치 {placedCount} / 전체 {images.length}</span>
-        <span className="tray-hint">클릭하면 다음 빈 칸에 추가 · 드래그로 특정 셀에 배치</span>
+        <span>이미지</span>
+        <span className="count">{placedCount} / {images.length}</span>
       </div>
+      <div className="tray-hint">클릭=다음 빈 칸 · 드래그=지정 셀</div>
       <div className="tray-list">
         {images.map((img) => (
           <TrayThumb

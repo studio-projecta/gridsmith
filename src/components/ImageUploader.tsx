@@ -40,7 +40,7 @@ export default function ImageUploader() {
           e.target.value = ''
         }}
       />
-      <span>＋ 이미지 업로드 (클릭 또는 드래그)</span>
+      <span>＋ 업로드<br />클릭 또는 드래그</span>
     </div>
   )
 }

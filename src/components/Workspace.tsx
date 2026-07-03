@@ -15,7 +15,6 @@ import ImageUploader from './ImageUploader'
 import ImageTray from './ImageTray'
 import Toolbar from './Toolbar'
 import GridEditor from './GridEditor'
-import ControlPanel from './ControlPanel'
 
 // 셀 폭에서 이 비율 안쪽의 좌/우 가장자리를 '사이(경계)' 조준으로 본다. 중앙은 셀 조준.
 const EDGE_FRACTION = 0.28
@@ -133,12 +132,13 @@ export default function Workspace() {
       onDragCancel={cleanup}
     >
       <div className="workspace">
-        <ImageUploader />
-        <ImageTray />
         <Toolbar />
-        <div className="editor-row">
+        <div className="work-body">
+          <aside className="tray-col">
+            <ImageUploader />
+            <ImageTray />
+          </aside>
           <GridEditor dropIntent={dropIntent} />
-          <ControlPanel />
         </div>
       </div>
 
