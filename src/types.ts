@@ -54,8 +54,15 @@ export interface GridLayout {
   transparentBg: boolean
   outputWidth: number
   outputHeight: number
-  /** 셀 간격(출력 px 기준). 바깥 여백에도 동일 적용. */
+  /** 셀 간격(출력 px 기준). marginX/Y 미지정 시 바깥 여백에도 적용. */
   gap: number
+  /**
+   * 바깥 여백(출력 px). marginX=좌우, marginY=상하.
+   * 미지정이면 gap 을 바깥 여백으로 쓴다. 지정하면 셀 간 gap 과 독립적으로 바깥만 이 크기로 비워,
+   * gap 이 달라도 바깥 라인이 여백값으로 고정된다.
+   */
+  marginX?: number
+  marginY?: number
   fit: FitMode
   /** 셀 안 이미지의 세로 정렬. 없으면 'center'(과거 레이아웃 호환). */
   align?: VAlign
@@ -98,10 +105,14 @@ export function computeAutoOutput(
   gap: number,
   imgW: number,
   imgH: number,
+  marginX?: number,
+  marginY?: number,
 ): { outputWidth: number; outputHeight: number } {
+  const mx = marginX ?? gap
+  const my = marginY ?? gap
   return {
-    outputWidth: Math.round(imgW * cols + gap * (cols + 1)),
-    outputHeight: Math.round(imgH * rows + gap * (rows + 1)),
+    outputWidth: Math.round(imgW * cols + gap * (cols - 1) + mx * 2),
+    outputHeight: Math.round(imgH * rows + gap * (rows - 1) + my * 2),
   }
 }
 

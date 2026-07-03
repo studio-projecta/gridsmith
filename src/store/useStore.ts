@@ -23,6 +23,8 @@ function withAutoSize(layout: GridLayout, images: StoredImage[]): GridLayout {
     layout.gap,
     img.width,
     img.height,
+    layout.marginX,
+    layout.marginY,
   )
   if (outputWidth === layout.outputWidth && outputHeight === layout.outputHeight) return layout
   return { ...layout, outputWidth, outputHeight }
@@ -254,8 +256,10 @@ export const useStore = create<StoreState>((set, get) => ({
     const layout = get().layout
     if (!layout) return
     let next = { ...layout, ...patch }
-    // gap 은 출력 크기 계산에 영향 → autoSize 면 재계산.
-    if ('gap' in patch) next = withAutoSize(next, get().images)
+    // gap·여백은 출력 크기 계산에 영향 → autoSize 면 재계산.
+    if ('gap' in patch || 'marginX' in patch || 'marginY' in patch) {
+      next = withAutoSize(next, get().images)
+    }
     persistLayout(next)
     set({ layout: next })
   },

@@ -7,16 +7,18 @@ export interface Rect {
   h: number
 }
 
-/** 출력 px 좌표계에서 index 번째 셀의 사각형. gap 은 바깥 여백에도 동일 적용. */
+/** 출력 px 좌표계에서 index 번째 셀의 사각형. 바깥 여백은 marginX/Y(미지정 시 gap), 셀 사이만 gap. */
 export function cellRect(layout: GridLayout, index: number): Rect {
   const { rows, cols, gap, outputWidth, outputHeight } = layout
-  const cellW = (outputWidth - gap * (cols + 1)) / cols
-  const cellH = (outputHeight - gap * (rows + 1)) / rows
+  const mx = layout.marginX ?? gap
+  const my = layout.marginY ?? gap
+  const cellW = (outputWidth - mx * 2 - gap * (cols - 1)) / cols
+  const cellH = (outputHeight - my * 2 - gap * (rows - 1)) / rows
   const col = index % cols
   const row = Math.floor(index / cols)
   return {
-    x: gap + col * (cellW + gap),
-    y: gap + row * (cellH + gap),
+    x: mx + col * (cellW + gap),
+    y: my + row * (cellH + gap),
     w: cellW,
     h: cellH,
   }
@@ -87,15 +89,18 @@ export function trimEmptyLines(layout: GridLayout): GridLayout {
   }
 
   // 셀 크기 유지 → 남은 행·열 기준으로 출력 크기 재계산(비율 재조정).
-  const cellW = (outputWidth - gap * (cols + 1)) / cols
-  const cellH = (outputHeight - gap * (rows + 1)) / rows
+  // 바깥 여백은 marginX/Y(미지정 시 gap)로 고정, 셀 사이만 gap.
+  const mx = layout.marginX ?? gap
+  const my = layout.marginY ?? gap
+  const cellW = (outputWidth - mx * 2 - gap * (cols - 1)) / cols
+  const cellH = (outputHeight - my * 2 - gap * (rows - 1)) / rows
   return {
     ...layout,
     rows: keptRows,
     cols: keptCols,
     cells: nextCells,
-    outputWidth: Math.round(cellW * keptCols + gap * (keptCols + 1)),
-    outputHeight: Math.round(cellH * keptRows + gap * (keptRows + 1)),
+    outputWidth: Math.round(cellW * keptCols + mx * 2 + gap * (keptCols - 1)),
+    outputHeight: Math.round(cellH * keptRows + my * 2 + gap * (keptRows - 1)),
     // 출력 크기를 직접 재계산했으므로 autoSize 로 되돌려지지 않게 고정한다.
     autoSize: false,
   }

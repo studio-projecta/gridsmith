@@ -47,6 +47,36 @@ export default function Toolbar() {
             onChange={(e) => updateLayout({ gap: clamp(Number(e.target.value) || 0, 0, 500) })}
           />
         </label>
+        <label className="tb-field" title="좌우 바깥 여백. 비우면 셀 간격과 동일하게 적용됩니다.">
+          여백↔
+          <input
+            type="number"
+            min={0}
+            max={2000}
+            value={layout.marginX ?? ''}
+            placeholder={String(layout.gap)}
+            onChange={(e) =>
+              updateLayout({
+                marginX: e.target.value === '' ? undefined : clamp(Number(e.target.value) || 0, 0, 2000),
+              })
+            }
+          />
+        </label>
+        <label className="tb-field" title="상하 바깥 여백. 비우면 셀 간격과 동일하게 적용됩니다.">
+          여백↕
+          <input
+            type="number"
+            min={0}
+            max={2000}
+            value={layout.marginY ?? ''}
+            placeholder={String(layout.gap)}
+            onChange={(e) =>
+              updateLayout({
+                marginY: e.target.value === '' ? undefined : clamp(Number(e.target.value) || 0, 0, 2000),
+              })
+            }
+          />
+        </label>
       </div>
 
       <span className="tb-divider" />

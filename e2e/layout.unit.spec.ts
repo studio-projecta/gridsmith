@@ -45,6 +45,26 @@ test.describe('cellRect', () => {
     eq(cellRect(L, 0), { x: 0, y: 0, w: 400, h: 400 })
     eq(cellRect(L, 1), { x: 400, y: 0, w: 400, h: 400 })
   })
+
+  test('여백 지정: 바깥은 marginX/Y, 셀 사이만 gap', () => {
+    const L = layout({ rows: 2, cols: 2, gap: 20, marginX: 50, marginY: 10, outputWidth: 400, outputHeight: 400 })
+    // cellW = (400 - 50*2 - 20*1)/2 = 140, cellH = (400 - 10*2 - 20*1)/2 = 180
+    eq(cellRect(L, 0), { x: 50, y: 10, w: 140, h: 180 })
+    eq(cellRect(L, 1), { x: 210, y: 10, w: 140, h: 180 }) // 50 + (140+20)
+    eq(cellRect(L, 3), { x: 210, y: 210, w: 140, h: 180 })
+  })
+
+  test('바깥 라인은 gap 과 무관하게 여백으로 고정(그룹 간 일관성)', () => {
+    const mk = (gap: number) =>
+      layout({ rows: 1, cols: 3, gap, marginX: 40, marginY: 40, outputWidth: 1000, outputHeight: 300 })
+    for (const gap of [0, 30, 120]) {
+      const L = mk(gap)
+      const first = cellRect(L, 0)
+      const last = cellRect(L, 2)
+      expect(first.x).toBeCloseTo(40, 5) // 좌측 바깥 = marginX
+      expect(last.x + last.w).toBeCloseTo(1000 - 40, 5) // 우측 바깥 = marginX
+    }
+  })
 })
 
 test.describe('imageRect', () => {
@@ -92,6 +112,18 @@ test.describe('computeAutoOutput', () => {
     const c0 = cellRect(L, 0)
     expect(c0.w).toBeCloseTo(120, 5)
     expect(c0.h).toBeCloseTo(90, 5)
+  })
+
+  test('여백 지정: 바깥을 여백으로 두고도 셀=이미지 원본(cellRect 역산)', () => {
+    const { outputWidth, outputHeight } = computeAutoOutput(2, 3, 10, 120, 90, 50, 25)
+    // 120*3 + 10*2 + 50*2 = 480, 90*2 + 10*1 + 25*2 = 240
+    expect({ outputWidth, outputHeight }).toEqual({ outputWidth: 480, outputHeight: 240 })
+    const L = layout({ rows: 2, cols: 3, gap: 10, marginX: 50, marginY: 25, outputWidth, outputHeight })
+    const c0 = cellRect(L, 0)
+    expect(c0.w).toBeCloseTo(120, 5)
+    expect(c0.h).toBeCloseTo(90, 5)
+    expect(c0.x).toBeCloseTo(50, 5)
+    expect(c0.y).toBeCloseTo(25, 5)
   })
 })
 
