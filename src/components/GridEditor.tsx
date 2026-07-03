@@ -133,6 +133,25 @@ export default function GridEditor({ dropIntent }: { dropIntent?: DropIntent | n
           {dropIntent?.kind === 'insert' && (
             <div className="insert-line" style={insertLineStyle(layout, dropIntent.index)} />
           )}
+          {(layout.borderWidth ?? 0) > 0 && (
+            // 출력 좌표계 viewBox 로 stroke 를 그려 컨테이너 배율과 무관하게 WYSIWYG 로 스케일.
+            // preserveAspectRatio="none" 로 컨테이너에 정확히 늘려 맞춘다. bw/2 인셋으로 stroke 가 안쪽에 들어옴.
+            <svg
+              className="border-overlay"
+              viewBox={`0 0 ${layout.outputWidth} ${layout.outputHeight}`}
+              preserveAspectRatio="none"
+            >
+              <rect
+                x={layout.borderWidth! / 2}
+                y={layout.borderWidth! / 2}
+                width={layout.outputWidth - layout.borderWidth!}
+                height={layout.outputHeight - layout.borderWidth!}
+                fill="none"
+                stroke="#000000"
+                strokeWidth={layout.borderWidth}
+              />
+            </svg>
+          )}
         </div>
       </div>
 

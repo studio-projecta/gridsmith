@@ -15,6 +15,7 @@ function scaleLayout(layout: GridLayout, longEdge: number): GridLayout {
     outputWidth: Math.round(layout.outputWidth * factor),
     outputHeight: Math.round(layout.outputHeight * factor),
     gap: Math.round(layout.gap * factor),
+    borderWidth: Math.round((layout.borderWidth ?? 0) * factor),
   }
 }
 
@@ -79,6 +80,7 @@ export default function ExportModal({ onClose }: Props) {
     outputWidth: outW,
     outputHeight: outH,
     gap: Math.round(base.gap * factor),
+    borderWidth: Math.round((base.borderWidth ?? 0) * factor),
   }
 
   const onWidth = (s: string) => {

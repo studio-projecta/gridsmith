@@ -122,6 +122,16 @@ export default function Toolbar() {
           disabled={layout.transparentBg}
           onChange={(e) => updateLayout({ bgColor: e.target.value })}
         />
+        <label className="tb-field" title="배경 테두리 두께(출력 px). 셀 배치에는 영향 없이 가장자리 안쪽에 그려집니다.">
+          테두리
+          <input
+            type="number"
+            min={0}
+            max={500}
+            value={layout.borderWidth ?? 0}
+            onChange={(e) => updateLayout({ borderWidth: clamp(Number(e.target.value) || 0, 0, 500) })}
+          />
+        </label>
       </div>
 
       <span className="tb-divider" />

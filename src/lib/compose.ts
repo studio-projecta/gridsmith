@@ -45,6 +45,15 @@ export async function composeToBlob(
     bitmap.close()
   }
 
+  // 배경 테두리: 출력 가장자리 안쪽에 stroke 로 얹는다. lineWidth 는 경로 중심 기준이라
+  // 절반이 밖으로 잘리지 않도록 bw/2 만큼 안쪽으로 들여 그린다(전체가 캔버스 안에 들어옴).
+  const bw = layout.borderWidth ?? 0
+  if (bw > 0) {
+    ctx.lineWidth = bw
+    ctx.strokeStyle = '#000000'
+    ctx.strokeRect(bw / 2, bw / 2, canvas.width - bw, canvas.height - bw)
+  }
+
   const mime = format === 'png' ? 'image/png' : 'image/jpeg'
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, mime, quality),

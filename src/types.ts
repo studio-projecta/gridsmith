@@ -63,6 +63,11 @@ export interface GridLayout {
    */
   marginX?: number
   marginY?: number
+  /**
+   * 배경 테두리 두께(출력 px). 0/미지정이면 테두리 없음.
+   * 출력 가장자리 안쪽에만 얹혀 그려져 셀 배치(cellRect)에는 영향을 주지 않는다(들여쓰기 없음).
+   */
+  borderWidth?: number
   fit: FitMode
   /** 셀 안 이미지의 세로 정렬. 없으면 'center'(과거 레이아웃 호환). */
   align?: VAlign
@@ -92,6 +97,7 @@ export function makeDefaultLayout(typeId: string): GridLayout {
     outputWidth: 1500,
     outputHeight: 1500,
     gap: 0,
+    borderWidth: 0,
     fit: 'cover',
     align: 'center',
     autoSize: true,
