@@ -71,6 +71,7 @@ interface StoreState {
   addType: (name: string) => Promise<void>
   renameType: (id: string, name: string) => Promise<void>
   removeType: (id: string) => Promise<void>
+  moveType: (id: string, dir: 'up' | 'down') => Promise<void>
 
   addImages: (files: File[]) => Promise<void>
   removeImage: (id: string) => Promise<void>
@@ -177,7 +178,10 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   addType: async (name) => {
-    const type: GroupType = { id: uid(), name: name.trim() || '새 유형', createdAt: Date.now() }
+    // 유형 순서는 createdAt 오름차순. 같은 ms 에 추가해도 순서가 뒤섞이지 않게 마지막보다 항상 큰 값을 준다.
+    const last = get().types[get().types.length - 1]
+    const createdAt = Math.max(Date.now(), (last?.createdAt ?? 0) + 1)
+    const type: GroupType = { id: uid(), name: name.trim() || '새 유형', createdAt }
     await db.putType(type)
     set((s) => ({ types: [...s.types, type] }))
     await get().selectType(type.id)
@@ -189,6 +193,24 @@ export const useStore = create<StoreState>((set, get) => ({
     const updated = { ...type, name: name.trim() || type.name }
     await db.putType(updated)
     set((s) => ({ types: s.types.map((t) => (t.id === id ? updated : t)) }))
+  },
+
+  // 인접 유형과 createdAt 을 맞바꿔 정렬 순서를 교체한다(순서 전용 필드/스키마 변경 없이 영속화).
+  moveType: async (id, dir) => {
+    const types = get().types
+    const idx = types.findIndex((t) => t.id === id)
+    if (idx === -1) return
+    const swapIdx = dir === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= types.length) return
+    const a = types[idx]
+    const b = types[swapIdx]
+    const na = { ...a, createdAt: b.createdAt }
+    const nb = { ...b, createdAt: a.createdAt }
+    await Promise.all([db.putType(na), db.putType(nb)])
+    const next = types
+      .map((t) => (t.id === na.id ? na : t.id === nb.id ? nb : t))
+      .sort((x, y) => x.createdAt - y.createdAt)
+    set({ types: next })
   },
 
   removeType: async (id) => {

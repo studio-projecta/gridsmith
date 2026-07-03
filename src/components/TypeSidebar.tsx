@@ -7,6 +7,7 @@ export default function TypeSidebar() {
   const addType = useStore((s) => s.addType)
   const renameType = useStore((s) => s.renameType)
   const removeType = useStore((s) => s.removeType)
+  const moveType = useStore((s) => s.moveType)
   const selectType = useStore((s) => s.selectType)
 
   const [newName, setNewName] = useState('')
@@ -44,12 +45,38 @@ export default function TypeSidebar() {
       </div>
 
       <ul className="type-list">
-        {types.map((t) => (
+        {types.map((t, i) => (
           <li
             key={t.id}
             className={t.id === selectedTypeId ? 'active' : ''}
             onClick={() => void selectType(t.id)}
           >
+            <span className="type-order">
+              <button
+                className="type-move"
+                title="위로"
+                aria-label="위로"
+                disabled={i === 0}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void moveType(t.id, 'up')
+                }}
+              >
+                ▲
+              </button>
+              <button
+                className="type-move"
+                title="아래로"
+                aria-label="아래로"
+                disabled={i === types.length - 1}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void moveType(t.id, 'down')
+                }}
+              >
+                ▼
+              </button>
+            </span>
             {editingId === t.id ? (
               <input
                 autoFocus

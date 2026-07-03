@@ -764,6 +764,35 @@ select {
   background: var(--accent);
 }
 
+.type-order {
+  display: flex;
+  flex-direction: column;
+  line-height: 0;
+}
+
+.type-move {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 8px;
+  line-height: 1;
+  height: 9px;
+  border-radius: 3px;
+  transition: color 0.12s, background 0.12s;
+}
+
+.type-move:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+
+.type-move:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
 .type-name {
   flex: 1;
   overflow: hidden;
