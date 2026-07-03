@@ -753,6 +753,9 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  /* 74px 썸네일 약 3줄분에서 멈추고 스크롤 → 이미지가 많아도 그리드를 밀어내지 않는다. */
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .thumb {
@@ -775,6 +778,32 @@ select {
 
 .thumb.dragging {
   opacity: 0.5;
+}
+
+/* 이미 그리드에 배치된 이미지: 흐리게 처리해 남은 이미지와 구분한다. */
+.thumb.placed img {
+  opacity: 0.4;
+}
+
+.thumb.placed {
+  border-color: var(--accent);
+}
+
+.thumb-placed {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
 }
 
 .thumb img {

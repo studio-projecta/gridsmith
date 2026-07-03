@@ -6,11 +6,13 @@ import type { StoredImage } from '../types'
 function TrayThumb({
   img,
   url,
+  placed,
   onDelete,
   onPlace,
 }: {
   img: StoredImage
   url: string
+  placed: boolean
   onDelete: () => void
   onPlace: () => void
 }) {
@@ -24,8 +26,8 @@ function TrayThumb({
 
   return (
     <div
-      className={'thumb' + (isDragging ? ' dragging' : '')}
-      title={`${img.name} · 클릭하면 다음 빈 칸에 추가`}
+      className={'thumb' + (isDragging ? ' dragging' : '') + (placed ? ' placed' : '')}
+      title={`${img.name} · ${placed ? '이미 배치됨 · ' : ''}클릭하면 다음 빈 칸에 추가`}
       ref={setNodeRef}
       {...listeners}
       {...attributes}
@@ -39,6 +41,7 @@ function TrayThumb({
       }}
     >
       <img src={url} alt={img.name} draggable={false} />
+      {placed && <span className="thumb-placed" title="배치됨">✓</span>}
       <button
         className="thumb-del"
         title="삭제"
@@ -56,16 +59,22 @@ function TrayThumb({
 export default function ImageTray() {
   const images = useStore((s) => s.images)
   const urls = useStore((s) => s.urls)
+  const layout = useStore((s) => s.layout)
   const removeImage = useStore((s) => s.removeImage)
   const placeInNextEmpty = useStore((s) => s.placeInNextEmpty)
   const selectedTypeId = useStore((s) => s.selectedTypeId)
 
   if (!selectedTypeId) return null
 
+  const placedIds = new Set(
+    (layout?.cells ?? []).filter((c) => c != null).map((c) => c!.imageId),
+  )
+  const placedCount = images.reduce((n, img) => n + (placedIds.has(img.id) ? 1 : 0), 0)
+
   return (
     <div className="tray">
       <div className="tray-head">
-        업로드한 이미지 <span className="count">{images.length}</span>
+        업로드한 이미지 <span className="count">배치 {placedCount} / 전체 {images.length}</span>
         <span className="tray-hint">클릭하면 다음 빈 칸에 추가 · 드래그로 특정 셀에 배치</span>
       </div>
       <div className="tray-list">
@@ -74,6 +83,7 @@ export default function ImageTray() {
             key={img.id}
             img={img}
             url={urls[img.id]}
+            placed={placedIds.has(img.id)}
             onDelete={() => void removeImage(img.id)}
             onPlace={() => placeInNextEmpty(img.id)}
           />
