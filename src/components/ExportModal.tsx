@@ -29,8 +29,9 @@ export default function ExportModal({ onClose }: Props) {
   const selectedTypeId = useStore((s) => s.selectedTypeId)
 
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
-  // 비워두면 구성 기준 긴 변을 그대로 사용. 값을 넣으면 그 긴 변으로 균일 스케일.
-  const [sizeInput, setSizeInput] = useState('')
+  // 가로/세로 입력. 비워두면 구성 기준 크기 사용. 한쪽을 바꾸면 나머지를 비율대로 자동 갱신.
+  const [wStr, setWStr] = useState('')
+  const [hStr, setHStr] = useState('')
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -60,9 +61,29 @@ export default function ExportModal({ onClose }: Props) {
 
   if (!layout) return null
 
-  const base = Math.max(layout.outputWidth, layout.outputHeight)
-  const longEdge = sizeInput === '' ? base : clamp(Number(sizeInput) || base, 1, 12000)
-  const scaled = scaleLayout(layout, longEdge)
+  // 구성 비율(가로:세로). 한쪽 입력 시 다른 쪽을 이 비율로 맞춘다.
+  const ratio = layout.outputWidth / layout.outputHeight
+  const outW = clamp(Number(wStr) || layout.outputWidth, 1, 12000)
+  const outH = clamp(Number(hStr) || layout.outputHeight, 1, 12000)
+  // 전체를 균일 스케일. gap 만 절대 px 라 같은 배율로 함께 스케일(벡터 확대).
+  const factor = outW / layout.outputWidth
+  const scaled: GridLayout = {
+    ...layout,
+    outputWidth: outW,
+    outputHeight: outH,
+    gap: Math.round(layout.gap * factor),
+  }
+
+  const onWidth = (s: string) => {
+    setWStr(s)
+    const n = Number(s)
+    if (n > 0) setHStr(String(clamp(Math.round(n / ratio), 1, 12000)))
+  }
+  const onHeight = (s: string) => {
+    setHStr(s)
+    const n = Number(s)
+    if (n > 0) setWStr(String(clamp(Math.round(n * ratio), 1, 12000)))
+  }
 
   const handleExport = async () => {
     const big = scaled.outputWidth * scaled.outputHeight > 8000 * 8000
@@ -90,11 +111,11 @@ export default function ExportModal({ onClose }: Props) {
 
         <div className="export-figure">
           <div className="dim dim-h">
-            <span className="dim-label">{scaled.outputWidth} px</span>
+            <span className="dim-label">{outW} px</span>
             <span className="dim-brace dim-brace-h" />
           </div>
           <div className="dim dim-v">
-            <span className="dim-label">{scaled.outputHeight} px</span>
+            <span className="dim-label">{outH} px</span>
             <span className="dim-brace dim-brace-v" />
           </div>
           <div
@@ -110,14 +131,25 @@ export default function ExportModal({ onClose }: Props) {
         </div>
 
         <div className="field">
-          <label>긴 변의 최종 크기 (px)</label>
+          <label>가로 (px)</label>
           <input
             type="number"
             min={1}
             max={12000}
-            value={sizeInput}
-            placeholder={String(base)}
-            onChange={(e) => setSizeInput(e.target.value)}
+            value={wStr}
+            placeholder={String(layout.outputWidth)}
+            onChange={(e) => onWidth(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label>세로 (px)</label>
+          <input
+            type="number"
+            min={1}
+            max={12000}
+            value={hStr}
+            placeholder={String(layout.outputHeight)}
+            onChange={(e) => onHeight(e.target.value)}
           />
         </div>
         <div className="field">
