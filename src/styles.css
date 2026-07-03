@@ -795,33 +795,26 @@ select {
   background: var(--accent);
 }
 
-.type-order {
-  display: flex;
-  flex-direction: column;
-  line-height: 0;
-}
-
-.type-move {
+.type-grip {
   border: none;
   background: transparent;
   color: var(--muted);
-  cursor: pointer;
-  padding: 0;
-  font-size: 8px;
+  cursor: grab;
+  padding: 0 2px;
+  font-size: 13px;
   line-height: 1;
-  height: 9px;
-  border-radius: 3px;
-  transition: color 0.12s, background 0.12s;
+  opacity: 0.45;
+  touch-action: none;
+  transition: color 0.12s, opacity 0.12s;
 }
 
-.type-move:hover:not(:disabled) {
+.type-grip:hover {
   color: var(--accent);
-  background: var(--surface-2);
+  opacity: 1;
 }
 
-.type-move:disabled {
-  opacity: 0.25;
-  cursor: default;
+.type-grip:active {
+  cursor: grabbing;
 }
 
 .type-name {

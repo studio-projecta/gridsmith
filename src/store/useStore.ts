@@ -71,7 +71,7 @@ interface StoreState {
   addType: (name: string) => Promise<void>
   renameType: (id: string, name: string) => Promise<void>
   removeType: (id: string) => Promise<void>
-  moveType: (id: string, dir: 'up' | 'down') => Promise<void>
+  reorderTypes: (orderedIds: string[]) => Promise<void>
 
   addImages: (files: File[]) => Promise<void>
   removeImage: (id: string) => Promise<void>
@@ -195,21 +195,17 @@ export const useStore = create<StoreState>((set, get) => ({
     set((s) => ({ types: s.types.map((t) => (t.id === id ? updated : t)) }))
   },
 
-  // 인접 유형과 createdAt 을 맞바꿔 정렬 순서를 교체한다(순서 전용 필드/스키마 변경 없이 영속화).
-  moveType: async (id, dir) => {
+  // 유형을 orderedIds 순서로 재배치한다. 기존 createdAt 값 집합을 순서대로 다시 매핑해
+  // (값은 보존, 소유자만 교체) 순서 전용 필드/스키마 변경 없이 영속화한다.
+  reorderTypes: async (orderedIds) => {
     const types = get().types
-    const idx = types.findIndex((t) => t.id === id)
-    if (idx === -1) return
-    const swapIdx = dir === 'up' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= types.length) return
-    const a = types[idx]
-    const b = types[swapIdx]
-    const na = { ...a, createdAt: b.createdAt }
-    const nb = { ...b, createdAt: a.createdAt }
-    await Promise.all([db.putType(na), db.putType(nb)])
-    const next = types
-      .map((t) => (t.id === na.id ? na : t.id === nb.id ? nb : t))
-      .sort((x, y) => x.createdAt - y.createdAt)
+    if (orderedIds.length !== types.length) return
+    const byId = new Map(types.map((t) => [t.id, t]))
+    const times = types.map((t) => t.createdAt).sort((a, b) => a - b)
+    const next = orderedIds.map((id, i) => ({ ...byId.get(id)!, createdAt: times[i] }))
+    const changed = next.filter((t) => byId.get(t.id)!.createdAt !== t.createdAt)
+    if (!changed.length) return
+    await Promise.all(changed.map((t) => db.putType(t)))
     set({ types: next })
   },
 
