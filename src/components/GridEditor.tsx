@@ -147,7 +147,7 @@ export default function GridEditor({ dropIntent }: { dropIntent?: DropIntent | n
                 width={layout.outputWidth - layout.borderWidth!}
                 height={layout.outputHeight - layout.borderWidth!}
                 fill="none"
-                stroke="#000000"
+                stroke={layout.borderColor ?? '#000000'}
                 strokeWidth={layout.borderWidth}
               />
             </svg>

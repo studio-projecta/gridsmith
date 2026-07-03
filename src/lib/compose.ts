@@ -50,7 +50,7 @@ export async function composeToBlob(
   const bw = layout.borderWidth ?? 0
   if (bw > 0) {
     ctx.lineWidth = bw
-    ctx.strokeStyle = '#000000'
+    ctx.strokeStyle = layout.borderColor ?? '#000000'
     ctx.strokeRect(bw / 2, bw / 2, canvas.width - bw, canvas.height - bw)
   }
 

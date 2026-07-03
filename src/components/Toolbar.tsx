@@ -132,6 +132,14 @@ export default function Toolbar() {
             onChange={(e) => updateLayout({ borderWidth: clamp(Number(e.target.value) || 0, 0, 500) })}
           />
         </label>
+        <input
+          type="color"
+          title="테두리 색"
+          aria-label="테두리 색"
+          value={layout.borderColor ?? '#000000'}
+          disabled={(layout.borderWidth ?? 0) === 0}
+          onChange={(e) => updateLayout({ borderColor: e.target.value })}
+        />
       </div>
 
       <span className="tb-divider" />

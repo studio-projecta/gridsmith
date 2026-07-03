@@ -27,7 +27,7 @@ test('배경 테두리: 가장자리에 그려지고 셀 배치는 밀리지 않
   await expect(page.locator('.grid-cell img')).toHaveCount(1)
 
   // 테두리 두께 20px 설정 → 미리보기에 오버레이 SVG 가 나타난다.
-  await page.getByLabel('테두리').fill('20')
+  await page.getByLabel('테두리', { exact: true }).fill('20')
   await expect(page.locator('.border-overlay')).toBeVisible()
 
   await page.waitForTimeout(500) // 저장 디바운스
