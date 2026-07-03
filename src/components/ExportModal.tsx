@@ -34,7 +34,7 @@ export default function ExportModal({ onClose }: Props) {
   const [wStr, setWStr] = useState('')
   const [hStr, setHStr] = useState('')
   // 켜면 모든 칸이 빈 행/열을 빼고 비율을 재조정한 레이아웃으로 미리보기·내보낸다.
-  const [trim, setTrim] = useState(false)
+  const [trim, setTrim] = useState(true)
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
