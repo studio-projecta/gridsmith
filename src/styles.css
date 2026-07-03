@@ -385,17 +385,52 @@ select {
 }
 
 .work-body {
-  display: grid;
-  grid-template-columns: 170px 1fr;
-  gap: 16px;
-  align-items: start;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
 }
 
 .tray-col {
+  width: var(--tray-w, 170px);
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+}
+
+.work-body > .grid-stage {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 트레이와 그리드 사이 폭 조절 바. hit 영역은 넓게, 시각 표시는 가는 그립으로. */
+.col-resizer {
+  flex: none;
+  width: 16px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.col-resizer-grip {
+  width: 3px;
+  align-self: stretch;
+  margin: 8px 0;
+  border-radius: 3px;
+  background: var(--border);
+  transition: background 0.12s;
+}
+
+.col-resizer:hover .col-resizer-grip {
+  background: var(--border-strong);
+}
+
+.col-resizer:active .col-resizer-grip {
+  background: var(--accent);
 }
 
 /* ---- grid stage ---- */

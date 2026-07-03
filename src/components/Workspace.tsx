@@ -37,12 +37,34 @@ export default function Workspace() {
 
   const [activeUrl, setActiveUrl] = useState<string | null>(null)
   const [dropIntent, setDropIntent] = useState<DropIntent | null>(null)
+  // 좌측 트레이 폭(px). 리사이저 바를 좌우로 끌어 조절.
+  const [trayWidth, setTrayWidth] = useState(170)
+  const resizeRef = useRef<{ startX: number; startW: number } | null>(null)
   // 드롭 시점에 최신 intent 를 동기 참조하기 위한 사본.
   const intentRef = useRef<DropIntent | null>(null)
   const pointerRef = useRef<{ x: number; y: number } | null>(null)
 
   // 클릭/삭제와 드래그를 구분하기 위한 최소 이동 거리.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  const TRAY_MIN = 120
+  const TRAY_MAX = 480
+  const onResizeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    resizeRef.current = { startX: e.clientX, startW: trayWidth }
+  }
+  const onResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = resizeRef.current
+    if (!r) return
+    const next = r.startW + (e.clientX - r.startX)
+    setTrayWidth(Math.min(TRAY_MAX, Math.max(TRAY_MIN, next)))
+  }
+  const onResizeUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return
+    resizeRef.current = null
+    e.currentTarget.releasePointerCapture(e.pointerId)
+  }
 
   const setIntent = (next: DropIntent | null) => {
     if (sameIntent(intentRef.current, next)) return
@@ -133,11 +155,22 @@ export default function Workspace() {
     >
       <div className="workspace">
         <Toolbar />
-        <div className="work-body">
+        <div className="work-body" style={{ '--tray-w': `${trayWidth}px` } as React.CSSProperties}>
           <aside className="tray-col">
             <ImageUploader />
             <ImageTray />
           </aside>
+          <div
+            className="col-resizer"
+            role="separator"
+            aria-orientation="vertical"
+            title="드래그하여 폭 조절"
+            onPointerDown={onResizeDown}
+            onPointerMove={onResizeMove}
+            onPointerUp={onResizeUp}
+          >
+            <span className="col-resizer-grip" />
+          </div>
           <GridEditor dropIntent={dropIntent} />
         </div>
       </div>
