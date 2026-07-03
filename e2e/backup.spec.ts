@@ -26,7 +26,7 @@ test('백업 내보내기 → 가져오기(병합) 왕복으로 유형·이미�
   // 백업 다운로드 캡처
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: '⬆ 백업' }).click(),
+    page.getByRole('button', { name: '백업' }).click(),
   ])
   expect(download.suggestedFilename()).toMatch(/^gridsmith-backup-.*\.zip$/)
   const backupPath = await download.path()
@@ -35,7 +35,7 @@ test('백업 내보내기 → 가져오기(병합) 왕복으로 유형·이미�
   // 가져오기(병합): 임시 file input 은 filechooser 이벤트로 처리
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
-    page.getByRole('button', { name: '⬇ 가져오기' }).click(),
+    page.getByRole('button', { name: '가져오기' }).click(),
   ])
   await chooser.setFiles(backupPath!)
 
