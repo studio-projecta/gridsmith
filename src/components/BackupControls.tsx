@@ -50,7 +50,7 @@ export default function BackupControls() {
         title="전체 유형·이미지·배치를 ZIP 파일로 백업"
         onClick={() => void handleExport()}
       >
-        ⬆ 백업
+        ⬇ 백업
       </button>
       <button
         className="ghost-btn"
@@ -58,7 +58,7 @@ export default function BackupControls() {
         title="백업 ZIP 을 병합해서 가져오기"
         onClick={pickFile}
       >
-        ⬇ 가져오기
+        ＋ 가져오기
       </button>
     </div>
   )
