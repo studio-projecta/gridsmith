@@ -2,6 +2,7 @@ import { useStore } from '../store/useStore'
 import { clamp } from '../lib/layout'
 import type { VAlign } from '../types'
 import ExportButton from './ExportButton'
+import HexInput from './HexInput'
 
 export default function Toolbar() {
   const autoFill = useStore((s) => s.autoFill)
@@ -118,9 +119,17 @@ export default function Toolbar() {
         </label>
         <input
           type="color"
+          title="배경색"
+          aria-label="배경색"
           value={layout.bgColor}
           disabled={layout.transparentBg}
           onChange={(e) => updateLayout({ bgColor: e.target.value })}
+        />
+        <HexInput
+          aria-label="배경색 hex"
+          value={layout.bgColor}
+          disabled={layout.transparentBg}
+          onChange={(hex) => updateLayout({ bgColor: hex })}
         />
         <label className="tb-field" title="배경 테두리 두께(출력 px). 셀 배치에는 영향 없이 가장자리 안쪽에 그려집니다.">
           테두리
@@ -139,6 +148,12 @@ export default function Toolbar() {
           value={layout.borderColor ?? '#000000'}
           disabled={(layout.borderWidth ?? 0) === 0}
           onChange={(e) => updateLayout({ borderColor: e.target.value })}
+        />
+        <HexInput
+          aria-label="테두리색 hex"
+          value={layout.borderColor ?? '#000000'}
+          disabled={(layout.borderWidth ?? 0) === 0}
+          onChange={(hex) => updateLayout({ borderColor: hex })}
         />
       </div>
 

@@ -100,6 +100,7 @@ export default function TypeSidebar() {
             <button
               className="type-del"
               title="삭제"
+              aria-label="삭제"
               onClick={(e) => {
                 e.stopPropagation()
                 if (confirm(`"${t.name}" 유형과 그 이미지를 삭제할까요?`)) {

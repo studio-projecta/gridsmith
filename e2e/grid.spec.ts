@@ -35,7 +35,7 @@ test('end-to-end: 유형 생성 → 업로드 → 배치 → 내보내기 → �
   await nums.nth(0).fill('2')
   await nums.nth(1).fill('2')
   await nums.nth(2).fill('20')
-  await page.locator('input[type=color]').evaluate((el: HTMLInputElement) => {
+  await page.getByLabel('배경색', { exact: true }).evaluate((el: HTMLInputElement) => {
     // React 는 native value 트래커로 변경을 감지하므로 prototype setter 를 사용.
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
     setter.call(el, '#ff00ff')

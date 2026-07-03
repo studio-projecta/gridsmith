@@ -50,7 +50,7 @@ test('유형 삭제 시 이미지·레이아웃이 cascade 로 함께 제거된�
   // 유형A 삭제 (해당 li 의 ✕ 버튼)
   await page
     .locator('.type-list li', { hasText: '유형A' })
-    .getByRole('button')
+    .getByRole('button', { name: '삭제' })
     .click()
 
   // UI: 유형A 사라지고 유형B 남음
