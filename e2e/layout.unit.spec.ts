@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { cellRect, imageRect, clamp, type Rect } from '../src/lib/layout'
+import { cellRect, imageRect, clamp, trimEmptyLines, type Rect } from '../src/lib/layout'
 import { computeAutoOutput, reflowCells } from '../src/types'
 import type { GridLayout, CellSlot } from '../src/types'
 
@@ -128,6 +128,61 @@ test.describe('reflowCells', () => {
     const r = reflowCells(cells, 1, 2) // 1행 요청, 6개
     expect(r.rows).toBe(3)
     expect(ids(r.cells)).toEqual(['0', '1', '2', '3', '4', '5'])
+  })
+})
+
+test.describe('trimEmptyLines', () => {
+  const slot = (id: string): CellSlot => ({ id } as unknown as CellSlot)
+  const ids = (cells: (CellSlot | null)[]) =>
+    cells.map((c) => (c ? (c as unknown as { id: string }).id : null))
+
+  test('빈 마지막 행·열 제거 + 비율 재조정', () => {
+    // 3x3, cell 100. 좌상단 2x2 만 채움 → 오른쪽 열/아래 행이 빔.
+    const cells = new Array(9).fill(null) as (CellSlot | null)[]
+    cells[0] = slot('a')
+    cells[1] = slot('b')
+    cells[3] = slot('c')
+    cells[4] = slot('d')
+    const L = layout({ rows: 3, cols: 3, gap: 0, outputWidth: 300, outputHeight: 300, cells })
+    const t = trimEmptyLines(L)
+    expect(t.rows).toBe(2)
+    expect(t.cols).toBe(2)
+    expect(t.outputWidth).toBe(200)
+    expect(t.outputHeight).toBe(200)
+    expect(ids(t.cells)).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  test('가운데 빈 열만 제거되고 사이 배치는 압축', () => {
+    // 1x3, cell 100. 가운데 열만 빔 → 양쪽만 남아 200 폭.
+    const cells: (CellSlot | null)[] = [slot('a'), null, slot('b')]
+    const L = layout({ rows: 1, cols: 3, gap: 0, outputWidth: 300, outputHeight: 100, cells })
+    const t = trimEmptyLines(L)
+    expect(t.cols).toBe(2)
+    expect(t.outputWidth).toBe(200)
+    expect(ids(t.cells)).toEqual(['a', 'b'])
+  })
+
+  test('gap 유지하며 1칸으로 압축', () => {
+    // 2x2, gap 20, output 400 → cell 170. 좌상단만 채움 → 1x1, 170 + 20*2 = 210.
+    const cells: (CellSlot | null)[] = [slot('a'), null, null, null]
+    const L = layout({ rows: 2, cols: 2, gap: 20, outputWidth: 400, outputHeight: 400, cells })
+    const t = trimEmptyLines(L)
+    expect(t.rows).toBe(1)
+    expect(t.cols).toBe(1)
+    expect(t.outputWidth).toBe(210)
+    expect(t.outputHeight).toBe(210)
+  })
+
+  test('뺄 빈 행/열이 없으면 원본 그대로(동일 참조)', () => {
+    // 대각선 배치 → 모든 행·열에 최소 1개.
+    const cells: (CellSlot | null)[] = [slot('a'), null, null, slot('b')]
+    const L = layout({ rows: 2, cols: 2, gap: 0, cells })
+    expect(trimEmptyLines(L)).toBe(L)
+  })
+
+  test('배치가 하나도 없으면 원본 그대로(동일 참조)', () => {
+    const L = layout({ rows: 2, cols: 2, cells: [null, null, null, null] })
+    expect(trimEmptyLines(L)).toBe(L)
   })
 })
 

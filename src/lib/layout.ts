@@ -1,4 +1,4 @@
-import type { GridLayout, FitMode, VAlign } from '../types'
+import type { GridLayout, CellSlot, FitMode, VAlign } from '../types'
 
 export interface Rect {
   x: number
@@ -54,4 +54,49 @@ export function imageRect(
 
 export function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v))
+}
+
+/**
+ * 모든 칸이 빈 행/열을 제거해 그리드를 압축한다.
+ * 셀 크기(cellW/cellH)는 유지하고 남은 행·열만큼 출력 크기를 다시 계산하므로,
+ * 빈 여백이 사라지고 가로:세로 비율이 실제 배치에 맞게 재조정된다.
+ * 제거할 빈 행/열이 없거나 배치된 셀이 하나도 없으면 원본을 그대로(동일 참조) 반환한다.
+ */
+export function trimEmptyLines(layout: GridLayout): GridLayout {
+  const { rows, cols, cells, gap, outputWidth, outputHeight } = layout
+  const rowKeep: boolean[] = new Array(rows).fill(false)
+  const colKeep: boolean[] = new Array(cols).fill(false)
+  for (let i = 0; i < cells.length; i++) {
+    if (!cells[i]) continue
+    rowKeep[Math.floor(i / cols)] = true
+    colKeep[i % cols] = true
+  }
+  const keptRows = rowKeep.filter(Boolean).length
+  const keptCols = colKeep.filter(Boolean).length
+  // 배치가 전혀 없으면 압축 기준이 없고, 뺄 게 없으면 변화가 없다.
+  if (keptRows === 0 || keptCols === 0) return layout
+  if (keptRows === rows && keptCols === cols) return layout
+
+  const nextCells: (CellSlot | null)[] = []
+  for (let r = 0; r < rows; r++) {
+    if (!rowKeep[r]) continue
+    for (let c = 0; c < cols; c++) {
+      if (!colKeep[c]) continue
+      nextCells.push(cells[r * cols + c] ?? null)
+    }
+  }
+
+  // 셀 크기 유지 → 남은 행·열 기준으로 출력 크기 재계산(비율 재조정).
+  const cellW = (outputWidth - gap * (cols + 1)) / cols
+  const cellH = (outputHeight - gap * (rows + 1)) / rows
+  return {
+    ...layout,
+    rows: keptRows,
+    cols: keptCols,
+    cells: nextCells,
+    outputWidth: Math.round(cellW * keptCols + gap * (keptCols + 1)),
+    outputHeight: Math.round(cellH * keptRows + gap * (keptRows + 1)),
+    // 출력 크기를 직접 재계산했으므로 autoSize 로 되돌려지지 않게 고정한다.
+    autoSize: false,
+  }
 }
