@@ -175,53 +175,97 @@ export default function Toolbar() {
         </div>
 
         <div className="tb-row">
-          <label className="checkbox-field">
-            <input
-              type="checkbox"
-              checked={layout.transparentBg}
-              onChange={(e) => updateLayout({ transparentBg: e.target.checked })}
-            />
-            투명 배경
-          </label>
-          <input
-            type="color"
-            title="배경색"
-            aria-label="배경색"
-            value={layout.bgColor}
-            disabled={layout.transparentBg}
-            onChange={(e) => updateLayout({ bgColor: e.target.value })}
-          />
-          <HexInput
-            aria-label="배경색 hex"
-            value={layout.bgColor}
-            disabled={layout.transparentBg}
-            onChange={(hex) => updateLayout({ bgColor: hex })}
-          />
-          <span className="tb-divider" />
-          <label className="tb-field" title="배경 테두리 두께(출력 px). 셀 배치에는 영향 없이 가장자리 안쪽에 그려집니다.">
-            테두리
-            <input
-              type="number"
-              min={0}
-              max={500}
-              value={layout.borderWidth ?? 0}
-              onChange={(e) => updateLayout({ borderWidth: clamp(Number(e.target.value) || 0, 0, 500) })}
-            />
-          </label>
-          <input
-            type="color"
-            title="테두리 색"
-            aria-label="테두리 색"
-            value={layout.borderColor ?? '#000000'}
-            disabled={(layout.borderWidth ?? 0) === 0}
-            onChange={(e) => updateLayout({ borderColor: e.target.value })}
-          />
-          <HexInput
-            aria-label="테두리색 hex"
-            value={layout.borderColor ?? '#000000'}
-            disabled={(layout.borderWidth ?? 0) === 0}
-            onChange={(hex) => updateLayout({ borderColor: hex })}
-          />
+          {/* 배경: 투명 체크(끄면 색 비활성) + 캔버스 배경색. */}
+          <div className="tb-cluster">
+            <span className="tb-cluster-cap">배경</span>
+            <div className="tb-group">
+              <label className="checkbox-field" title="배경을 채우지 않습니다(PNG 만 투명 유지).">
+                <input
+                  type="checkbox"
+                  checked={layout.transparentBg}
+                  onChange={(e) => updateLayout({ transparentBg: e.target.checked })}
+                />
+                투명
+              </label>
+              <input
+                type="color"
+                title="배경색"
+                aria-label="배경색"
+                value={layout.bgColor}
+                disabled={layout.transparentBg}
+                onChange={(e) => updateLayout({ bgColor: e.target.value })}
+              />
+              <HexInput
+                aria-label="배경색 hex"
+                value={layout.bgColor}
+                disabled={layout.transparentBg}
+                onChange={(hex) => updateLayout({ bgColor: hex })}
+              />
+            </div>
+          </div>
+
+          {/* 셀 배경: 사용 체크(켜야 색 활성) + 셀 영역 채움색. */}
+          <div className="tb-cluster">
+            <span className="tb-cluster-cap">셀 배경</span>
+            <div className="tb-group">
+              <label
+                className="checkbox-field"
+                title="각 셀 영역을 별도 색으로 채웁니다. 셀 간격·바깥 여백에는 배경색이 그대로 남습니다."
+              >
+                <input
+                  type="checkbox"
+                  checked={layout.cellBgColor != null}
+                  onChange={(e) => updateLayout({ cellBgColor: e.target.checked ? '#ffffff' : undefined })}
+                />
+                사용
+              </label>
+              <input
+                type="color"
+                title="셀 배경색"
+                aria-label="셀 배경색"
+                value={layout.cellBgColor ?? '#ffffff'}
+                disabled={layout.cellBgColor == null}
+                onChange={(e) => updateLayout({ cellBgColor: e.target.value })}
+              />
+              <HexInput
+                aria-label="셀 배경색 hex"
+                value={layout.cellBgColor ?? '#ffffff'}
+                disabled={layout.cellBgColor == null}
+                onChange={(hex) => updateLayout({ cellBgColor: hex })}
+              />
+            </div>
+          </div>
+
+          {/* 테두리: 두께(0=없음) + 색. */}
+          <div className="tb-cluster">
+            <span className="tb-cluster-cap">테두리</span>
+            <div className="tb-group">
+              <label className="tb-field" title="배경 테두리 두께(출력 px). 셀 배치에는 영향 없이 가장자리 안쪽에 그려집니다.">
+                <input
+                  type="number"
+                  min={0}
+                  max={500}
+                  aria-label="테두리"
+                  value={layout.borderWidth ?? 0}
+                  onChange={(e) => updateLayout({ borderWidth: clamp(Number(e.target.value) || 0, 0, 500) })}
+                />
+              </label>
+              <input
+                type="color"
+                title="테두리 색"
+                aria-label="테두리 색"
+                value={layout.borderColor ?? '#000000'}
+                disabled={(layout.borderWidth ?? 0) === 0}
+                onChange={(e) => updateLayout({ borderColor: e.target.value })}
+              />
+              <HexInput
+                aria-label="테두리색 hex"
+                value={layout.borderColor ?? '#000000'}
+                disabled={(layout.borderWidth ?? 0) === 0}
+                onChange={(hex) => updateLayout({ borderColor: hex })}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

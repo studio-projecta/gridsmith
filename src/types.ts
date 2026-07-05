@@ -56,6 +56,12 @@ export interface GridLayout {
   bgColor: string
   /** true 면 배경을 채우지 않음(투명). PNG 에서만 유지되고 JPEG 은 검정으로 채워짐. */
   transparentBg: boolean
+  /**
+   * 셀 사각형(cellRect)을 채우는 색. 지정하면 셀 간격·바깥 여백에는 bgColor 가 남고
+   * 각 셀 영역만 이 색으로 칠해진다(내부 여백/contain 여백에 이 색이 비친다).
+   * 미지정이면 셀도 배경(bgColor)이 그대로 비쳐 과거 동작과 동일하다.
+   */
+  cellBgColor?: string
   outputWidth: number
   outputHeight: number
   /** 셀 간격(출력 px 기준). marginX/Y 미지정 시 바깥 여백에도 적용. */

@@ -44,7 +44,7 @@ test('투명 배경: PNG 내보내기 시 배경 영역의 알파가 0', async (
   await nums.nth(2).fill('40')
 
   // 투명 배경 켜기 → 색상 입력 비활성
-  await page.getByRole('checkbox', { name: '투명 배경' }).check()
+  await page.getByRole('checkbox', { name: '투명' }).check()
   await expect(page.getByLabel('배경색', { exact: true })).toBeDisabled()
 
   // 한 셀만 채움(셀0)

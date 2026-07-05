@@ -1,5 +1,5 @@
 import type { GridLayout, StoredImage } from '../types'
-import { cellContentRect, imageRect } from './layout'
+import { cellRect, cellContentRect, imageRect } from './layout'
 
 /**
  * 레이아웃을 outputWidth×outputHeight 캔버스에 합성해 Blob 으로 반환.
@@ -22,6 +22,16 @@ export async function composeToBlob(
   if (!(layout.transparentBg && format === 'png')) {
     ctx.fillStyle = layout.bgColor
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+  }
+
+  // 셀 배경: 각 셀 사각형만 채워 셀 간격·바깥 여백에는 bgColor 가 남는다.
+  // 이미지보다 먼저 그려 내부 여백/contain 여백에 이 색이 비치게 한다.
+  if (layout.cellBgColor) {
+    ctx.fillStyle = layout.cellBgColor
+    for (let i = 0; i < layout.cells.length; i++) {
+      const cell = cellRect(layout, i)
+      ctx.fillRect(cell.x, cell.y, cell.w, cell.h)
+    }
   }
 
   const imgMap = new Map(images.map((i) => [i.id, i]))

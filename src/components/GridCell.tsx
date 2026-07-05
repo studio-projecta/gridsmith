@@ -85,6 +85,7 @@ export default function GridCell({
         top: `${topPct}%`,
         width: `${wPct}%`,
         height: `${hPct}%`,
+        background: layout.cellBgColor,
       }}
       onClick={(e) => {
         e.stopPropagation()
