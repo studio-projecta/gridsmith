@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { useStore } from './store/useStore'
 import TypeSidebar from './components/TypeSidebar'
 import Workspace from './components/Workspace'
@@ -45,6 +46,7 @@ export default function App() {
         </a>
         <span>Gridsmith v{__APP_VERSION__}</span>
       </footer>
+      <Analytics />
     </div>
   )
 }
