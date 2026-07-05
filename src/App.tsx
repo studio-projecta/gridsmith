@@ -34,7 +34,17 @@ export default function App() {
         </main>
       </div>
 
-      <footer className="app-footer">Gridsmith v{__APP_VERSION__}</footer>
+      <footer className="app-footer">
+        <a
+          className="kofi-link"
+          href="https://ko-fi.com/labda"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ☕ Support on Ko-fi
+        </a>
+        <span>Gridsmith v{__APP_VERSION__}</span>
+      </footer>
     </div>
   )
 }

@@ -98,12 +98,25 @@ select {
 
 .app-footer {
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 9px 22px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 12px;
-  text-align: right;
+}
+
+.kofi-link {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.kofi-link:hover {
+  color: var(--text);
+  text-decoration: underline;
 }
 
 /* ---- layout ---- */
