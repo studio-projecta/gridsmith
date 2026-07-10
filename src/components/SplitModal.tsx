@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { computeSplitGeometry, splitImage } from '../lib/split'
+import { computeSplitGeometry, splitFiles } from '../lib/split'
 import { zipStore } from '../lib/zip'
 import { downloadBlob } from '../lib/compose'
 
@@ -25,7 +25,7 @@ function parseRatio(s: string): [number, number] | null {
 }
 
 export default function SplitModal({ onClose }: Props) {
-  const [loaded, setLoaded] = useState<Loaded | null>(null)
+  const [loaded, setLoaded] = useState<Loaded[]>([])
   const [mode, setMode] = useState<'1x3' | '2x3' | 'custom'>('2x3')
   const [ratioStr, setRatioStr] = useState('2x3')
   const [sepStr, setSepStr] = useState('1')
@@ -47,43 +47,54 @@ export default function SplitModal({ onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // 언마운트 시 마지막 미리보기 URL 해제.
+  // 언마운트 시 미리보기 URL 전부 해제.
   useEffect(() => () => {
-    if (loaded) URL.revokeObjectURL(loaded.url)
+    loaded.forEach((l) => URL.revokeObjectURL(l.url))
   }, [loaded])
 
-  const pickFile = async (file: File) => {
-    let bitmap: ImageBitmap
-    try {
-      bitmap = await createImageBitmap(file)
-    } catch {
+  const pickFiles = async (files: File[]) => {
+    const next: Loaded[] = []
+    for (const file of files) {
+      try {
+        const bitmap = await createImageBitmap(file)
+        next.push({ file, url: URL.createObjectURL(file), width: bitmap.width, height: bitmap.height })
+        bitmap.close()
+      } catch {
+        // 못 읽는 파일은 건너뛴다.
+      }
+    }
+    if (!next.length) {
       alert('이미지를 읽을 수 없습니다.')
       return
     }
-    const width = bitmap.width
-    const height = bitmap.height
-    bitmap.close()
     setLoaded((prev) => {
-      if (prev) URL.revokeObjectURL(prev.url)
-      return { file, url: URL.createObjectURL(file), width, height }
+      prev.forEach((l) => URL.revokeObjectURL(l.url))
+      return next
     })
   }
 
   const ratio = parseRatio(ratioStr)
   const sep = Math.max(0, Math.floor(Number(sepStr) || 0))
 
-  const geo = useMemo(() => {
-    if (!loaded || !ratio) return null
-    return computeSplitGeometry(loaded.width, loaded.height, ratio[0], ratio[1], sep)
+  // 이미지마다 크기가 달라 셀 크기·유실 px 이 다르므로 파일별로 계산한다.
+  const geos = useMemo(() => {
+    if (!ratio) return []
+    return loaded.map((l) => computeSplitGeometry(l.width, l.height, ratio[0], ratio[1], sep))
   }, [loaded, ratio, sep])
 
-  const valid = geo !== null && geo.cellW >= 1 && geo.cellH >= 1
+  const valid =
+    loaded.length > 0 && ratio !== null && geos.every((g) => g.cellW >= 1 && g.cellH >= 1)
+  const totalPieces = ratio ? loaded.length * ratio[0] * ratio[1] : 0
+  const dropped = loaded
+    .map((l, i) => ({ l, g: geos[i] }))
+    .filter(({ g }) => g && (g.droppedX > 0 || g.droppedY > 0))
 
   const handleDownload = async () => {
-    if (!loaded || !ratio || !valid) return
+    if (!ratio || !valid) return
     setBusy(true)
     try {
-      const files = await splitImage(loaded.file, ratio[0], ratio[1], sep, format)
+      const inputs = loaded.map((l) => ({ name: l.file.name, blob: l.file }))
+      const files = await splitFiles(inputs, ratio[0], ratio[1], sep, format)
       const zip = await zipStore(files)
       downloadBlob(zip, `split-${ratio[0]}x${ratio[1]}.zip`)
       onClose()
@@ -102,25 +113,33 @@ export default function SplitModal({ onClose }: Props) {
         <div className="field">
           <label>이미지</label>
           <label className="split-file-btn">
-            {loaded ? '이미지 변경' : '파일 선택'}
+            {loaded.length ? '이미지 변경' : '파일 선택'}
             <input
               type="file"
               accept="image/*"
+              multiple
               hidden
               onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) void pickFile(f)
+                const fs = Array.from(e.target.files ?? [])
+                if (fs.length) void pickFiles(fs)
               }}
             />
           </label>
         </div>
 
-        {loaded && (
+        {loaded.length === 1 && (
           <div className="split-figure">
-            <img className="split-preview" src={loaded.url} alt="원본 미리보기" />
+            <img className="split-preview" src={loaded[0].url} alt="원본 미리보기" />
             <span className="hint">
-              원본 {loaded.width}×{loaded.height}
+              원본 {loaded[0].width}×{loaded[0].height}
             </span>
+          </div>
+        )}
+        {loaded.length > 1 && (
+          <div className="split-thumbs">
+            {loaded.map((l) => (
+              <img key={l.url} className="split-thumb" src={l.url} alt={l.file.name} title={l.file.name} />
+            ))}
           </div>
         )}
 
@@ -180,28 +199,36 @@ export default function SplitModal({ onClose }: Props) {
           </select>
         </div>
 
-        {loaded && !ratio && (
+        {loaded.length > 0 && !ratio && (
           <p className="split-notice">비율 형식이 올바르지 않습니다. 예: 2x3</p>
         )}
-        {geo && !valid && (
+        {loaded.length > 0 && ratio && !valid && (
           <p className="split-notice">분할 수가 이미지 크기에 비해 너무 큽니다.</p>
         )}
-        {geo && valid && ratio && (
+        {valid && ratio && (
           <>
             <p className="hint">
-              결과: {ratio[0] * ratio[1]}개 · {geo.cellW}×{geo.cellH}
+              {loaded.length === 1
+                ? `결과: ${ratio[0] * ratio[1]}개 · ${geos[0].cellW}×${geos[0].cellH}`
+                : `결과: 이미지 ${loaded.length}개 × ${ratio[0] * ratio[1]} = 총 ${totalPieces}장`}
             </p>
-            {(geo.droppedX > 0 || geo.droppedY > 0) && (
+            {dropped.length > 0 && (
               <p className="split-notice">
                 이미지 크기가 딱 나누어 떨어지지 않아요.
                 <br />
-                다음과 같은 부분이 유실돼요:{' '}
-                {[
-                  geo.droppedX > 0 ? `오른쪽 ${geo.droppedX}px` : null,
-                  geo.droppedY > 0 ? `아래쪽 ${geo.droppedY}px` : null,
-                ]
-                  .filter(Boolean)
-                  .join(', ')}
+                다음 이미지에서 일부가 유실돼요:
+                <br />
+                {dropped.map(({ l, g }) => (
+                  <span key={l.url} className="split-drop-line">
+                    {loaded.length > 1 ? `${l.file.name}: ` : ''}
+                    {[
+                      g.droppedX > 0 ? `오른쪽 ${g.droppedX}px` : null,
+                      g.droppedY > 0 ? `아래쪽 ${g.droppedY}px` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </span>
+                ))}
               </p>
             )}
           </>

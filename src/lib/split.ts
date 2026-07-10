@@ -90,3 +90,40 @@ export async function splitImage(
     bitmap.close()
   }
 }
+
+// 확장자를 떼고 경로 구분자만 정리해 ZIP 폴더 이름으로 쓴다(한글·공백 유지).
+function folderBase(name: string): string {
+  const dot = name.lastIndexOf('.')
+  const stem = dot > 0 ? name.slice(0, dot) : name
+  return stem.replace(/[/\\]+/g, '_').trim() || 'image'
+}
+
+/**
+ * 여러 이미지를 같은 비율로 분할해 하나의 파일 목록으로 반환한다.
+ * 2장 이상이면 원본 파일명 폴더로 묶어 조각을 담고(중복명은 -1,-2), 1장이면 평면 이름을 쓴다.
+ */
+export async function splitFiles(
+  inputs: { name: string; blob: Blob }[],
+  cols: number,
+  rows: number,
+  sep: number,
+  format: 'png' | 'jpeg',
+  quality = 0.92,
+): Promise<SplitFile[]> {
+  const single = inputs.length === 1
+  const seen = new Map<string, number>()
+  const out: SplitFile[] = []
+  for (const input of inputs) {
+    const pieces = await splitImage(input.blob, cols, rows, sep, format, quality)
+    if (single) {
+      out.push(...pieces)
+      continue
+    }
+    let base = folderBase(input.name)
+    const n = seen.get(base) ?? 0
+    seen.set(base, n + 1)
+    if (n > 0) base = `${base}-${n}`
+    for (const p of pieces) out.push({ name: `${base}/${p.name}`, blob: p.blob })
+  }
+  return out
+}

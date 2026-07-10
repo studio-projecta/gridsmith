@@ -18,6 +18,15 @@ function firstPngSize(buf: Buffer): { width: number; height: number; entries: nu
   return { width, height, entries }
 }
 
+function firstEntryName(buf: Buffer): string {
+  const nameLen = buf.readUInt16LE(26)
+  return buf.subarray(30, 30 + nameLen).toString('utf8')
+}
+
+function zipEntryCount(buf: Buffer): number {
+  return buf.readUInt16LE(buf.length - 22 + 10)
+}
+
 test('이미지 분할 → 1441×452 를 2x3 로 나눠 720×150 6장 ZIP 다운로드', async ({ page }) => {
   page.on('dialog', (d) => d.accept())
   await page.goto('/')
@@ -49,6 +58,33 @@ test('이미지 분할 → 1441×452 를 2x3 로 나눠 720×150 6장 ZIP 다운
   expect(entries).toBe(6)
   expect(width).toBe(720)
   expect(height).toBe(150)
+})
+
+test('여러 이미지 일괄 분할 → 파일별 폴더로 묶인 ZIP', async ({ page }) => {
+  page.on('dialog', (d) => d.accept())
+  await page.goto('/')
+
+  await page.getByRole('button', { name: '분할' }).click()
+  const modal = page.locator('.split-modal')
+
+  await modal.locator('input[type=file]').setInputFiles([
+    { name: 'first.png', mimeType: 'image/png', buffer: makeSolidPNG(1441, 452, BLUE) },
+    { name: 'second.png', mimeType: 'image/png', buffer: makeSolidPNG(601, 302, BLUE) },
+  ])
+
+  // 2장 × 2x3 = 총 12장.
+  await expect(modal.getByText('총 12장')).toBeVisible()
+  await expect(modal.locator('.split-thumb')).toHaveCount(2)
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    modal.getByRole('button', { name: '분할 다운로드' }).click(),
+  ])
+  const fs = await import('node:fs')
+  const buf = fs.readFileSync((await download.path())!)
+  expect(zipEntryCount(buf)).toBe(12)
+  // 여러 장이면 원본 파일명 폴더로 묶인다.
+  expect(firstEntryName(buf)).toMatch(/^(first|second)\/r\dc\d\.png$/)
 })
 
 test('나눠떨어지지 않으면 버림 안내가 뜬다', async ({ page }) => {

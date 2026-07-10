@@ -899,6 +899,24 @@ select {
   line-height: 1.4;
 }
 
+.split-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.split-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.split-drop-line {
+  display: block;
+}
+
 .split-presets {
   display: flex;
   gap: 6px;
