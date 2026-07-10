@@ -899,10 +899,31 @@ select {
   line-height: 1.4;
 }
 
+.split-files-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.split-clear {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 .split-thumbs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.split-thumb-item {
+  position: relative;
+  display: inline-flex;
 }
 
 .split-thumb {
@@ -911,6 +932,25 @@ select {
   object-fit: cover;
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.split-thumb-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .split-drop-line {

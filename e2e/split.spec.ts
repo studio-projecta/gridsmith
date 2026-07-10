@@ -87,6 +87,35 @@ test('여러 이미지 일괄 분할 → 파일별 폴더로 묶인 ZIP', async 
   expect(firstEntryName(buf)).toMatch(/^(first|second)\/r\dc\d\.png$/)
 })
 
+test('여러 번 선택하면 누적된다(다른 디렉터리 취합) + 개별 제거', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: '분할' }).click()
+  const modal = page.locator('.split-modal')
+  const input = modal.locator('input[type=file]')
+
+  // 1차 선택 2장
+  await input.setInputFiles([
+    { name: 'a.png', mimeType: 'image/png', buffer: makeSolidPNG(600, 300, BLUE) },
+    { name: 'b.png', mimeType: 'image/png', buffer: makeSolidPNG(600, 300, BLUE) },
+  ])
+  await expect(modal.getByText('선택 2개')).toBeVisible()
+
+  // 2차 선택 1장 → 덮어쓰지 않고 누적되어 3장
+  await input.setInputFiles([
+    { name: 'c.png', mimeType: 'image/png', buffer: makeSolidPNG(600, 300, BLUE) },
+  ])
+  await expect(modal.getByText('선택 3개')).toBeVisible()
+  await expect(modal.locator('.split-thumb')).toHaveCount(3)
+
+  // 개별 제거 → 2장
+  await modal.locator('.split-thumb-remove').first().click()
+  await expect(modal.getByText('선택 2개')).toBeVisible()
+
+  // 전체 지우기 → 선택 없음
+  await modal.getByRole('button', { name: '전체 지우기' }).click()
+  await expect(modal.locator('.split-thumb')).toHaveCount(0)
+})
+
 test('나눠떨어지지 않으면 버림 안내가 뜬다', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: '분할' }).click()

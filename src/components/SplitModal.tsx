@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { computeSplitGeometry, splitFiles } from '../lib/split'
 import { zipStore } from '../lib/zip'
 import { downloadBlob } from '../lib/compose'
@@ -47,11 +47,16 @@ export default function SplitModal({ onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // 언마운트 시 미리보기 URL 전부 해제.
+  // 언마운트 시에만 남아 있는 미리보기 URL 을 해제(누적 목록이라 개별 삭제는 그때 revoke).
+  const loadedRef = useRef(loaded)
+  loadedRef.current = loaded
   useEffect(() => () => {
-    loaded.forEach((l) => URL.revokeObjectURL(l.url))
-  }, [loaded])
+    loadedRef.current.forEach((l) => URL.revokeObjectURL(l.url))
+  }, [])
 
+  const key = (f: File) => `${f.name}:${f.size}:${f.lastModified}`
+
+  // 여러 디렉터리에서 나눠 담을 수 있게 새 선택을 기존 목록에 누적한다(같은 파일은 건너뜀).
   const pickFiles = async (files: File[]) => {
     const next: Loaded[] = []
     for (const file of files) {
@@ -68,8 +73,31 @@ export default function SplitModal({ onClose }: Props) {
       return
     }
     setLoaded((prev) => {
+      const seen = new Set(prev.map((l) => key(l.file)))
+      const added = next.filter((l) => {
+        if (seen.has(key(l.file))) {
+          URL.revokeObjectURL(l.url)
+          return false
+        }
+        seen.add(key(l.file))
+        return true
+      })
+      return [...prev, ...added]
+    })
+  }
+
+  const removeAt = (idx: number) => {
+    setLoaded((prev) => {
+      const l = prev[idx]
+      if (l) URL.revokeObjectURL(l.url)
+      return prev.filter((_, i) => i !== idx)
+    })
+  }
+
+  const clearAll = () => {
+    setLoaded((prev) => {
       prev.forEach((l) => URL.revokeObjectURL(l.url))
-      return next
+      return []
     })
   }
 
@@ -113,7 +141,7 @@ export default function SplitModal({ onClose }: Props) {
         <div className="field">
           <label>이미지</label>
           <label className="split-file-btn">
-            {loaded.length ? '이미지 변경' : '파일 선택'}
+            {loaded.length ? '파일 추가' : '파일 선택'}
             <input
               type="file"
               accept="image/*"
@@ -121,11 +149,22 @@ export default function SplitModal({ onClose }: Props) {
               hidden
               onChange={(e) => {
                 const fs = Array.from(e.target.files ?? [])
+                // 여러 번 나눠 담을 수 있게 값 초기화(같은 파일 재선택도 인식).
+                e.currentTarget.value = ''
                 if (fs.length) void pickFiles(fs)
               }}
             />
           </label>
         </div>
+
+        {loaded.length > 0 && (
+          <div className="split-files-head">
+            <span className="hint">선택 {loaded.length}개</span>
+            <button type="button" className="split-clear" onClick={clearAll}>
+              전체 지우기
+            </button>
+          </div>
+        )}
 
         {loaded.length === 1 && (
           <div className="split-figure">
@@ -137,8 +176,18 @@ export default function SplitModal({ onClose }: Props) {
         )}
         {loaded.length > 1 && (
           <div className="split-thumbs">
-            {loaded.map((l) => (
-              <img key={l.url} className="split-thumb" src={l.url} alt={l.file.name} title={l.file.name} />
+            {loaded.map((l, i) => (
+              <span key={l.url} className="split-thumb-item" title={l.file.name}>
+                <img className="split-thumb" src={l.url} alt={l.file.name} />
+                <button
+                  type="button"
+                  className="split-thumb-remove"
+                  aria-label={`${l.file.name} 제거`}
+                  onClick={() => removeAt(i)}
+                >
+                  ×
+                </button>
+              </span>
             ))}
           </div>
         )}
