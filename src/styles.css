@@ -811,6 +811,7 @@ select {
   color: var(--text-2);
 }
 
+.field input[type="text"],
 .field input[type="number"],
 .field select {
   width: 100px;
@@ -856,6 +857,73 @@ select {
   color: var(--muted);
   margin: 2px 0 0;
   line-height: 1.4;
+}
+
+/* ---- split modal ---- */
+.split-modal {
+  width: 440px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.split-modal h3 {
+  margin: 0;
+}
+
+/* 좁아져도 라벨이 세로로 눌려 줄바꿈되지 않게 고정. */
+.split-modal .field label {
+  white-space: nowrap;
+}
+
+.split-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.split-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: block;
+}
+
+.split-notice {
+  font-size: 12px;
+  color: var(--danger, #b91c1c);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.split-presets {
+  display: flex;
+  gap: 6px;
+}
+
+.split-preset,
+.split-file-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.split-file-btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+.split-preset.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 /* ---- sidebar ---- */
