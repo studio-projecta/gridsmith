@@ -14,6 +14,12 @@ interface Loaded {
   height: number
 }
 
+function fmtBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`
+}
+
 // "2x3" / "2X3" / "2×3" 를 [cols, rows] 로. 유효하지 않으면 null.
 function parseRatio(s: string): [number, number] | null {
   const m = s.trim().match(/^(\d+)\s*[x×X]\s*(\d+)$/)
@@ -31,6 +37,10 @@ export default function SplitModal({ onClose }: Props) {
   const [sepStr, setSepStr] = useState('1')
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
   const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{ rawBytes: number; optBytes: number } | null>(null)
+
+  // 입력·설정이 바뀌면 이전 다운로드의 용량 표시는 더 이상 유효하지 않다.
+  useEffect(() => setResult(null), [loaded, ratioStr, sepStr, format])
 
   // 프리셋: 자주 쓰는 비율은 구분선 1px 고정으로 바로 선택. 사용자 지정은 직접 입력.
   const selectPreset = (preset: '1x3' | '2x3') => {
@@ -122,10 +132,10 @@ export default function SplitModal({ onClose }: Props) {
     setBusy(true)
     try {
       const inputs = loaded.map((l) => ({ name: l.file.name, blob: l.file }))
-      const files = await splitFiles(inputs, ratio[0], ratio[1], sep, format)
+      const { files, rawBytes, optBytes } = await splitFiles(inputs, ratio[0], ratio[1], sep, format)
       const zip = await zipStore(files)
       downloadBlob(zip, `split-${ratio[0]}x${ratio[1]}.zip`)
-      onClose()
+      setResult({ rawBytes, optBytes })
     } catch (err) {
       alert(`분할 실패: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
@@ -283,9 +293,20 @@ export default function SplitModal({ onClose }: Props) {
           </>
         )}
 
+        {result && (
+          <p className="split-result">
+            {result.optBytes < result.rawBytes
+              ? `무손실 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(result.optBytes)} (${(
+                  100 *
+                  (1 - result.optBytes / result.rawBytes)
+                ).toFixed(1)}% 감소)`
+              : `총 용량: ${fmtBytes(result.optBytes)}`}
+          </p>
+        )}
+
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose} disabled={busy}>
-            취소
+            {result ? '닫기' : '취소'}
           </button>
           <button className="export-btn" disabled={busy || !valid} onClick={handleDownload}>
             {busy ? '생성 중…' : '⬇ 분할 다운로드'}

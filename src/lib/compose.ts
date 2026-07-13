@@ -1,5 +1,6 @@
 import type { GridLayout, StoredImage } from '../types'
 import { cellRect, cellContentRect, imageRect } from './layout'
+import { encodeCanvas, type ImageFormat } from './encode'
 
 /**
  * 레이아웃을 outputWidth×outputHeight 캔버스에 합성해 Blob 으로 반환.
@@ -8,7 +9,7 @@ import { cellRect, cellContentRect, imageRect } from './layout'
 export async function composeToBlob(
   layout: GridLayout,
   images: StoredImage[],
-  format: 'png' | 'jpeg',
+  format: ImageFormat,
   quality = 0.92,
 ): Promise<Blob> {
   const canvas = document.createElement('canvas')
@@ -65,11 +66,7 @@ export async function composeToBlob(
     ctx.strokeRect(bw / 2, bw / 2, canvas.width - bw, canvas.height - bw)
   }
 
-  const mime = format === 'png' ? 'image/png' : 'image/jpeg'
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, mime, quality),
-  )
-  if (!blob) throw new Error('이미지 생성에 실패했습니다.')
+  const { blob } = await encodeCanvas(canvas, format, quality)
   return blob
 }
 

@@ -2,6 +2,8 @@
 // 그 구분선을 버리며 잘라낸다: 최종 셀 = floor((변-구분선총합)/개수). 나눠떨어지지 않는
 // 나머지 px 는 우측·하단에서 버린다(모든 셀이 동일 크기가 되도록).
 
+import { encodeCanvas, type ImageFormat } from './encode'
+
 export interface SplitRect {
   r: number
   c: number
@@ -45,15 +47,22 @@ export interface SplitFile {
   blob: Blob
 }
 
+export interface SplitResult {
+  files: SplitFile[]
+  // 최적화 전/후 총 바이트(모든 조각 합). PNG 최적화 절감량 표시에 쓴다.
+  rawBytes: number
+  optBytes: number
+}
+
 /** 이미지를 분할해 각 셀을 개별 Blob 으로 반환한다(행 우선 rNcM 명명). */
 export async function splitImage(
   file: Blob,
   cols: number,
   rows: number,
   sep: number,
-  format: 'png' | 'jpeg',
+  format: ImageFormat,
   quality = 0.92,
-): Promise<SplitFile[]> {
+): Promise<SplitResult> {
   if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || rows < 1) {
     throw new Error('분할 수는 1 이상의 정수여야 합니다.')
   }
@@ -72,20 +81,20 @@ export async function splitImage(
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('canvas 2d context 를 생성할 수 없습니다.')
 
-    const mime = format === 'png' ? 'image/png' : 'image/jpeg'
     const ext = format
     const files: SplitFile[] = []
+    let rawBytes = 0
+    let optBytes = 0
     for (const { r, c, sx, sy } of geo.rects) {
       // JPEG 는 알파가 없으므로 이전 셀의 잔상을 지우려 매 셀 클리어.
       ctx.clearRect(0, 0, cellW, cellH)
       ctx.drawImage(bitmap, sx, sy, cellW, cellH, 0, 0, cellW, cellH)
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, mime, quality),
-      )
-      if (!blob) throw new Error('이미지 생성에 실패했습니다.')
+      const { blob, rawSize } = await encodeCanvas(canvas, format, quality)
+      rawBytes += rawSize
+      optBytes += blob.size
       files.push({ name: `r${r + 1}c${c + 1}.${ext}`, blob })
     }
-    return files
+    return { files, rawBytes, optBytes }
   } finally {
     bitmap.close()
   }
@@ -107,23 +116,27 @@ export async function splitFiles(
   cols: number,
   rows: number,
   sep: number,
-  format: 'png' | 'jpeg',
+  format: ImageFormat,
   quality = 0.92,
-): Promise<SplitFile[]> {
+): Promise<SplitResult> {
   const single = inputs.length === 1
   const seen = new Map<string, number>()
   const out: SplitFile[] = []
+  let rawBytes = 0
+  let optBytes = 0
   for (const input of inputs) {
-    const pieces = await splitImage(input.blob, cols, rows, sep, format, quality)
+    const res = await splitImage(input.blob, cols, rows, sep, format, quality)
+    rawBytes += res.rawBytes
+    optBytes += res.optBytes
     if (single) {
-      out.push(...pieces)
+      out.push(...res.files)
       continue
     }
     let base = folderBase(input.name)
     const n = seen.get(base) ?? 0
     seen.set(base, n + 1)
     if (n > 0) base = `${base}-${n}`
-    for (const p of pieces) out.push({ name: `${base}/${p.name}`, blob: p.blob })
+    for (const p of res.files) out.push({ name: `${base}/${p.name}`, blob: p.blob })
   }
-  return out
+  return { files: out, rawBytes, optBytes }
 }
