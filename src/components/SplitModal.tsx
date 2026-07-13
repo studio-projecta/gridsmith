@@ -38,6 +38,9 @@ export default function SplitModal({ onClose }: Props) {
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ rawBytes: number; optBytes: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+  // 중첩 자식 위를 지날 때 dragenter/dragleave 가 번갈아 발생해 깜빡이므로 깊이를 센다.
+  const dragDepth = useRef(0)
 
   // 입력·설정이 바뀌면 이전 다운로드의 용량 표시는 더 이상 유효하지 않다.
   useEffect(() => setResult(null), [loaded, ratioStr, sepStr, format])
@@ -96,6 +99,36 @@ export default function SplitModal({ onClose }: Props) {
     })
   }
 
+  const onDragEnter = (e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return
+    e.preventDefault()
+    dragDepth.current += 1
+    setDragging(true)
+  }
+
+  const onDragOver = (e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const onDragLeave = (e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return
+    dragDepth.current -= 1
+    if (dragDepth.current <= 0) {
+      dragDepth.current = 0
+      setDragging(false)
+    }
+  }
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    dragDepth.current = 0
+    setDragging(false)
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+    if (files.length) void pickFiles(files)
+  }
+
   const removeAt = (idx: number) => {
     setLoaded((prev) => {
       const l = prev[idx]
@@ -145,7 +178,15 @@ export default function SplitModal({ onClose }: Props) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal split-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={'modal split-modal' + (dragging ? ' dragover' : '')}
+        onClick={(e) => e.stopPropagation()}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        {dragging && <div className="split-drop-overlay">여기에 이미지를 놓으세요</div>}
         <h3>이미지 분할</h3>
 
         <div className="field">

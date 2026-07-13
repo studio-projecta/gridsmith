@@ -866,6 +866,27 @@ select {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+}
+
+.split-modal.dragover {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}
+
+.split-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .split-modal h3 {
