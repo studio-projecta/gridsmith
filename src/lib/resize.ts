@@ -1,8 +1,7 @@
 // 모바일용·PC용 이미지를 각각 별도로 입력받아 web 배포용 규격에 맞춘다.
 // 각 이미지는 width 를 규격 폭에 맞춰 비율 유지로 스케일한 뒤 고정 크기 투명 캔버스에
-// 하단 정렬해 그린다(PC 는 바닥에서 1px 띄움). width 스케일 결과 높이가 배치 가능 높이를
-// 넘으면 그 규격으로 커버 불가다. 모바일 이미지는 _Mobile 리사이즈본과 _Weflab 원본이 되고,
-// PC 이미지는 _PC 리사이즈본이 된다.
+// 하단에 붙여 그린다. width 스케일 결과 높이가 규격 높이를 넘으면 그 규격으로 커버 불가다.
+// 모바일 이미지는 _Mobile 리사이즈본과 _Weflab 원본이 되고, PC 이미지는 _PC 리사이즈본이 된다.
 
 import { encodeCanvas } from './encode'
 import { folderBase, type SplitFile, type SplitResult } from './split'
@@ -11,13 +10,11 @@ export interface ResizeTarget {
   key: 'Mobile' | 'PC'
   w: number
   h: number
-  // 캔버스 바닥에서 이미지 하단까지 띄우는 여백(px). PC 는 1px.
-  bottomGap: number
 }
 
 export const RESIZE_TARGETS: ResizeTarget[] = [
-  { key: 'Mobile', w: 293, h: 248, bottomGap: 0 },
-  { key: 'PC', w: 195, h: 145, bottomGap: 1 },
+  { key: 'Mobile', w: 293, h: 248 },
+  { key: 'PC', w: 195, h: 145 },
 ]
 
 function targetOf(key: ResizeTarget['key']): ResizeTarget {
@@ -30,16 +27,15 @@ export interface Placement {
   scaledW: number
   scaledH: number
   drawY: number
-  // width 스케일 후 높이가 배치 가능 높이(h - bottomGap) 이하라 캔버스 안에 온전히 들어가는가.
+  // width 스케일 후 높이가 규격 높이 이하라 캔버스 안에 온전히 들어가는가.
   fits: boolean
 }
 
-// width 를 규격 폭에 맞추고, 하단 정렬(바닥에서 bottomGap 만큼 띄움) 그리기 좌표를 계산한다.
+// width 를 규격 폭에 맞추고, 하단에 붙이는 그리기 좌표를 계산한다.
 export function computePlacement(srcW: number, srcH: number, t: ResizeTarget): Placement {
   const scaledW = t.w
   const scaledH = Math.round((t.w * srcH) / srcW)
-  const usableH = t.h - t.bottomGap
-  return { scaledW, scaledH, drawY: usableH - scaledH, fits: scaledH <= usableH }
+  return { scaledW, scaledH, drawY: t.h - scaledH, fits: scaledH <= t.h }
 }
 
 /** 이미지가 해당 규격 하나에 온전히 들어가면 true(높이가 넘치면 커버 불가). */
