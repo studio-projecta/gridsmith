@@ -1,6 +1,8 @@
-// 이미지를 web 배포용 두 규격(모바일/PC)의 고정 크기 투명 캔버스에 배치한다.
-// width 를 규격 폭에 맞춰 비율 유지로 스케일한 뒤 하단 정렬해 그린다(PC 는 바닥에서 1px 띄움).
-// width 스케일 결과 높이가 배치 가능 높이를 넘으면 그 이미지는 해당 규격으로 커버 불가다.
+// 모바일용·PC용 이미지를 각각 별도로 입력받아 web 배포용 규격에 맞춘다.
+// 각 이미지는 width 를 규격 폭에 맞춰 비율 유지로 스케일한 뒤 고정 크기 투명 캔버스에
+// 하단 정렬해 그린다(PC 는 바닥에서 1px 띄움). width 스케일 결과 높이가 배치 가능 높이를
+// 넘으면 그 규격으로 커버 불가다. 모바일 이미지는 _Mobile 리사이즈본과 _Weflab 원본이 되고,
+// PC 이미지는 _PC 리사이즈본이 된다.
 
 import { encodeCanvas } from './encode'
 import { folderBase, type SplitFile, type SplitResult } from './split'
@@ -18,6 +20,12 @@ export const RESIZE_TARGETS: ResizeTarget[] = [
   { key: 'PC', w: 195, h: 145, bottomGap: 1 },
 ]
 
+function targetOf(key: ResizeTarget['key']): ResizeTarget {
+  const t = RESIZE_TARGETS.find((x) => x.key === key)
+  if (!t) throw new Error(`알 수 없는 규격: ${key}`)
+  return t
+}
+
 export interface Placement {
   scaledW: number
   scaledH: number
@@ -34,12 +42,12 @@ export function computePlacement(srcW: number, srcH: number, t: ResizeTarget): P
   return { scaledW, scaledH, drawY: usableH - scaledH, fits: scaledH <= usableH }
 }
 
-/** 모든 규격에서 이미지가 온전히 들어가면 true(어느 하나라도 넘치면 커버 불가). */
-export function isCoverable(srcW: number, srcH: number): boolean {
-  return RESIZE_TARGETS.every((t) => computePlacement(srcW, srcH, t).fits)
+/** 이미지가 해당 규격 하나에 온전히 들어가면 true(높이가 넘치면 커버 불가). */
+export function coversTarget(srcW: number, srcH: number, key: ResizeTarget['key']): boolean {
+  return computePlacement(srcW, srcH, targetOf(key)).fits
 }
 
-// 한 규격의 투명 캔버스에 하단 정렬로 그려 PNG(oxipng)로 인코딩한다.
+// 한 규격의 투명 캔버스에 하단 정렬로 그려 PNG(oxipng, 부족하면 손실 폴백으로 50KB)로 인코딩한다.
 async function renderTarget(
   bitmap: ImageBitmap,
   t: ResizeTarget,
@@ -54,41 +62,7 @@ async function renderTarget(
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, p.drawY, p.scaledW, p.scaledH)
-  // 무손실로 부족하면 손실 폴백으로 50KB 이하로 맞춘다.
   return encodeCanvas(canvas, 'png', 0.92, 50 * 1024)
-}
-
-export interface ResizeImageResult {
-  // 규격별 생성 PNG(_Mobile, _PC). _Weflab 원본은 호출부에서 원본 blob 을 그대로 붙인다.
-  targets: { key: ResizeTarget['key']; blob: Blob }[]
-  rawBytes: number
-  optBytes: number
-  // 어느 한 규격이라도 손실 압축을 거쳤는가(50KB 를 맞추려).
-  lossy: boolean
-}
-
-/** 이미지 한 장을 모든 규격으로 렌더링해 PNG blob 을 반환한다. */
-export async function resizeImage(file: Blob): Promise<ResizeImageResult> {
-  const bitmap = await createImageBitmap(file)
-  try {
-    if (!isCoverable(bitmap.width, bitmap.height)) {
-      throw new Error('이미지 높이가 규격 크기를 초과해 커버할 수 없습니다.')
-    }
-    const targets: { key: ResizeTarget['key']; blob: Blob }[] = []
-    let rawBytes = 0
-    let optBytes = 0
-    let lossy = false
-    for (const t of RESIZE_TARGETS) {
-      const { blob, rawSize, lossy: targetLossy } = await renderTarget(bitmap, t)
-      rawBytes += rawSize
-      optBytes += blob.size
-      lossy = lossy || targetLossy
-      targets.push({ key: t.key, blob })
-    }
-    return { targets, rawBytes, optBytes, lossy }
-  } finally {
-    bitmap.close()
-  }
 }
 
 // 원본 파일명의 확장자(점 포함, 없으면 빈 문자열). _Weflab 은 원본 확장자를 보존한다.
@@ -98,35 +72,44 @@ function extOf(name: string): string {
 }
 
 /**
- * 여러 이미지를 규격별로 리사이즈해 하나의 파일 목록으로 반환한다.
- * 이미지마다 파일명 stem 폴더로 묶고(중복 stem 은 -1,-2), 폴더 안에
- * {stem}_Mobile.png, {stem}_PC.png, {stem}_Weflab.{원본확장자}(원본 그대로) 3개를 담는다.
+ * 모바일용·PC용 이미지를 각각 리사이즈해 하나의 파일 목록으로 반환한다.
+ * 모바일 이미지 이름을 stem 으로 폴더를 만들고, 폴더 안에
+ * {stem}_Mobile.png(모바일 리사이즈), {stem}_PC.png(PC 리사이즈),
+ * {stem}_Weflab.{모바일 원본확장자}(모바일 원본 그대로) 3개를 담는다.
  */
-export async function resizeFiles(
-  inputs: { name: string; blob: Blob }[],
+export async function resizePair(
+  mobile: { name: string; blob: Blob },
+  pc: { name: string; blob: Blob },
 ): Promise<SplitResult> {
-  const seen = new Map<string, number>()
-  const out: SplitFile[] = []
-  let rawBytes = 0
-  let optBytes = 0
-  let lossy = false
-  for (const input of inputs) {
-    const res = await resizeImage(input.blob)
-    rawBytes += res.rawBytes
-    optBytes += res.optBytes
-    lossy = lossy || res.lossy
-
-    let base = folderBase(input.name)
-    const n = seen.get(base) ?? 0
-    seen.set(base, n + 1)
-    const folder = n > 0 ? `${base}-${n}` : base
-    // 파일명 stem 은 폴더명(sanitize 후)과 동일하게 맞춘다.
-    const stem = base
-
-    for (const t of res.targets) {
-      out.push({ name: `${folder}/${stem}_${t.key}.png`, blob: t.blob })
+  const mobileT = targetOf('Mobile')
+  const pcT = targetOf('PC')
+  const mBitmap = await createImageBitmap(mobile.blob)
+  const pBitmap = await createImageBitmap(pc.blob)
+  try {
+    if (!computePlacement(mBitmap.width, mBitmap.height, mobileT).fits) {
+      throw new Error('모바일 이미지 높이가 규격을 초과해 커버할 수 없습니다.')
     }
-    out.push({ name: `${folder}/${stem}_Weflab${extOf(input.name)}`, blob: input.blob })
+    if (!computePlacement(pBitmap.width, pBitmap.height, pcT).fits) {
+      throw new Error('PC 이미지 높이가 규격을 초과해 커버할 수 없습니다.')
+    }
+
+    const mob = await renderTarget(mBitmap, mobileT)
+    const pcRes = await renderTarget(pBitmap, pcT)
+
+    const stem = folderBase(mobile.name)
+    const files: SplitFile[] = [
+      { name: `${stem}/${stem}_Mobile.png`, blob: mob.blob },
+      { name: `${stem}/${stem}_PC.png`, blob: pcRes.blob },
+      { name: `${stem}/${stem}_Weflab${extOf(mobile.name)}`, blob: mobile.blob },
+    ]
+    return {
+      files,
+      rawBytes: mob.rawSize + pcRes.rawSize,
+      optBytes: mob.blob.size + pcRes.blob.size,
+      lossy: mob.lossy || pcRes.lossy,
+    }
+  } finally {
+    mBitmap.close()
+    pBitmap.close()
   }
-  return { files: out, rawBytes, optBytes, lossy }
 }

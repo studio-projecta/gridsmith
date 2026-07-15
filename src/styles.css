@@ -920,6 +920,60 @@ select {
   line-height: 1.4;
 }
 
+/* 리사이즈: 모바일용·PC용 두 슬롯을 나란히. */
+.resize-slots {
+  display: flex;
+  gap: 12px;
+}
+
+.resize-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.resize-slot.dragover {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}
+
+.resize-slot-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.resize-slot-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.resize-slot-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* 파일명은 길면 말줄임, '제거' 는 줄바꿈 없이 항상 온전히. */
+.resize-slot-foot .hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resize-slot-foot .split-clear {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .split-result {
   font-size: 13px;
   font-weight: 600;
