@@ -1,34 +1,87 @@
 import { optimise } from '@jsquash/oxipng'
+import { medianCut } from './quantize'
 
 export type ImageFormat = 'png' | 'jpeg'
 
 export interface EncodeResult {
   blob: Blob
-  // 최적화 전(canvas 원본) 바이트. PNG 만 optimise 를 거치므로 JPEG 는 blob.size 와 같다.
+  // 최적화 전(canvas 원본) 바이트. 손실 폴백과 무관하게 절감 표시에 쓰인다.
   rawSize: number
 }
 
 // oxipng 무손실 최적화 레벨(0-6). 6 은 최대 압축이며 가장 느리다.
 const PNG_OPT_LEVEL = 6
+// PNG 손실 폴백에서 시도하는 팔레트 색상 수(높은 품질부터 낮춰가며 목표 용량을 맞춘다).
+const QUANT_STEPS = [256, 128, 64, 32, 16, 8, 4, 2]
+// JPEG 손실 폴백에서 낮춰가는 품질 단계.
+const JPEG_QUALITY_STEPS = [0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25, 0.15]
+
+function toBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('이미지 생성에 실패했습니다.'))),
+      mime,
+      quality,
+    ),
+  )
+}
+
+async function optimisePng(blob: Blob): Promise<Blob> {
+  const optimised = await optimise(await blob.arrayBuffer(), { level: PNG_OPT_LEVEL })
+  return new Blob([optimised], { type: 'image/png' })
+}
 
 /**
- * 캔버스를 Blob 으로 인코딩한다. 분할·합성 등 모든 출력 경로가 공유한다.
- * PNG 는 oxipng 로 무손실 재압축해 용량을 줄인다(디코드 결과 픽셀 동일).
- * JPEG 는 손실 포맷이라 무손실 재압축 이득이 없어 canvas 결과를 그대로 쓴다.
+ * 캔버스를 Blob 으로 인코딩한다. 분할·리사이즈·합성 등 모든 출력 경로가 공유한다.
+ * PNG 는 oxipng 로 무손실 재압축한다. targetBytes 가 주어지고 무손실 결과가 그보다 크면
+ * median-cut 색상 양자화(손실)로 색 수를 낮춰가며 목표 이하로 맞춘다(알파 보존).
+ * JPEG 는 targetBytes 초과 시 quality 를 낮춰 맞춘다.
  * rawSize 로 최적화 전 크기를 함께 돌려줘 호출부가 절감량을 표시할 수 있다.
  */
 export async function encodeCanvas(
   canvas: HTMLCanvasElement,
   format: ImageFormat,
   quality = 0.92,
+  targetBytes?: number,
 ): Promise<EncodeResult> {
   const mime = format === 'png' ? 'image/png' : 'image/jpeg'
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, mime, quality),
-  )
-  if (!blob) throw new Error('이미지 생성에 실패했습니다.')
-  if (format !== 'png') return { blob, rawSize: blob.size }
+  const raw = await toBlob(canvas, mime, quality)
+  const rawSize = raw.size
 
-  const optimised = await optimise(await blob.arrayBuffer(), { level: PNG_OPT_LEVEL })
-  return { blob: new Blob([optimised], { type: 'image/png' }), rawSize: blob.size }
+  if (format !== 'png') {
+    if (!targetBytes || raw.size <= targetBytes) return { blob: raw, rawSize }
+    // JPEG 손실 폴백: 품질을 낮춰가며 첫 통과(없으면 가장 작은 것) 반환.
+    let best = raw
+    for (const q of JPEG_QUALITY_STEPS) {
+      const b = await toBlob(canvas, mime, q)
+      if (b.size < best.size) best = b
+      if (b.size <= targetBytes) return { blob: b, rawSize }
+    }
+    return { blob: best, rawSize }
+  }
+
+  const lossless = await optimisePng(raw)
+  if (!targetBytes || lossless.size <= targetBytes) return { blob: lossless, rawSize }
+
+  // PNG 손실 폴백: 색상 수를 낮춰가며 양자화 → oxipng. 첫 통과(없으면 가장 작은 것) 반환.
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return { blob: lossless, rawSize }
+  const src = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const scratch = document.createElement('canvas')
+  scratch.width = canvas.width
+  scratch.height = canvas.height
+  const sctx = scratch.getContext('2d')
+  if (!sctx) return { blob: lossless, rawSize }
+
+  const dst = sctx.createImageData(canvas.width, canvas.height)
+  let best = lossless
+  for (const colors of QUANT_STEPS) {
+    const quantized = medianCut(src.data, canvas.width, canvas.height, colors)
+    dst.data.set(quantized)
+    sctx.putImageData(dst, 0, 0)
+    const opt = await optimisePng(await toBlob(scratch, 'image/png', 1))
+    if (opt.size < best.size) best = opt
+    if (opt.size <= targetBytes) return { blob: opt, rawSize }
+  }
+  return { blob: best, rawSize }
 }

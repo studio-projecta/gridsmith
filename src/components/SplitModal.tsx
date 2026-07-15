@@ -165,7 +165,17 @@ export default function SplitModal({ onClose }: Props) {
     setBusy(true)
     try {
       const inputs = loaded.map((l) => ({ name: l.file.name, blob: l.file }))
-      const { files, rawBytes, optBytes } = await splitFiles(inputs, ratio[0], ratio[1], sep, format)
+      // 무손실로 부족하면 손실 폴백으로 조각당 200KB 이하로 맞춘다.
+      const SPLIT_TARGET = 200 * 1024
+      const { files, rawBytes, optBytes } = await splitFiles(
+        inputs,
+        ratio[0],
+        ratio[1],
+        sep,
+        format,
+        0.92,
+        SPLIT_TARGET,
+      )
       const zip = await zipStore(files)
       downloadBlob(zip, `split-${ratio[0]}x${ratio[1]}.zip`)
       setResult({ rawBytes, optBytes })

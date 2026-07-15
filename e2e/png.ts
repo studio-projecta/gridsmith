@@ -59,3 +59,46 @@ export function makeSolidPNG(width: number, height: number, rgb: [number, number
     chunk('IEND', Buffer.alloc(0)),
   ])
 }
+
+/**
+ * width×height 고엔트로피 노이즈(RGB) PNG 버퍼 생성. 무손실 압축이 잘 안 돼
+ * 목표 용량을 넘기므로 손실 폴백 경로를 테스트하는 데 쓴다. LCG 로 결정적으로 생성한다.
+ */
+export function makeNoisePNG(width: number, height: number): Buffer {
+  const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(width, 0)
+  ihdr.writeUInt32BE(height, 4)
+  ihdr[8] = 8 // bit depth
+  ihdr[9] = 2 // color type: truecolor RGB
+  // compression/filter/interlace 0
+
+  let seed = 0x1234abcd
+  const rand = () => {
+    // 32-bit LCG (numerical recipes).
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    return (seed >>> 24) & 0xff
+  }
+
+  const rowLen = 1 + width * 3
+  const raw = Buffer.alloc(rowLen * height)
+  for (let y = 0; y < height; y++) {
+    const off = y * rowLen
+    raw[off] = 0 // filter type: none
+    for (let x = 0; x < width; x++) {
+      const p = off + 1 + x * 3
+      raw[p] = rand()
+      raw[p + 1] = rand()
+      raw[p + 2] = rand()
+    }
+  }
+  const idat = zlib.deflateSync(raw)
+
+  return Buffer.concat([
+    sig,
+    chunk('IHDR', ihdr),
+    chunk('IDAT', idat),
+    chunk('IEND', Buffer.alloc(0)),
+  ])
+}
