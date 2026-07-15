@@ -1,7 +1,22 @@
 import { test, expect } from '@playwright/test'
-import { makeSolidPNG } from './png'
+import { makeSolidPNG, makeNoisePNG } from './png'
 
 const BLUE: [number, number, number] = [0, 0, 255]
+
+// STORE(무압축) ZIP 의 로컬 헤더를 순회해 각 항목의 {name, size} 를 읽는다(저장 크기 = 원본 크기).
+function zipEntries(buf: Buffer): { name: string; size: number }[] {
+  const out: { name: string; size: number }[] = []
+  let p = 0
+  while (p + 4 <= buf.length && buf.readUInt32LE(p) === 0x04034b50) {
+    const size = buf.readUInt32LE(p + 18) // compressed size (STORE 이므로 저장 크기)
+    const nameLen = buf.readUInt16LE(p + 26)
+    const extraLen = buf.readUInt16LE(p + 28)
+    const name = buf.subarray(p + 30, p + 30 + nameLen).toString('utf8')
+    out.push({ name, size })
+    p += 30 + nameLen + extraLen + size
+  }
+  return out
+}
 
 // STORE(무압축) ZIP 첫 항목의 저장 데이터(=PNG)를 꺼내 IHDR 의 width/height 를 읽는다.
 function firstPngSize(buf: Buffer): { width: number; height: number } {
@@ -76,6 +91,35 @@ test('여러 가로 이미지 → 파일별 폴더 6개 항목', async ({ page }
   // 2장 × 3(Mobile·PC·원본) = 6.
   expect(zipEntryCount(buf)).toBe(6)
   expect(firstEntryName(buf)).toMatch(/^(first|second)\/(first|second)_Mobile\.png$/)
+})
+
+test('노이즈 이미지도 손실 폴백으로 _Mobile/_PC 각 50KB 미만', async ({ page }) => {
+  test.setTimeout(60_000) // 양자화 폴백은 여러 번 인코딩해 시간이 걸린다.
+  await page.goto('/')
+  await page.getByRole('button', { name: '리사이즈' }).click()
+  const modal = page.locator('.split-modal')
+
+  // 293×200 고엔트로피 노이즈: 무손실로는 50KB 를 넘겨 손실 폴백을 강제한다.
+  await modal.locator('input[type=file]').setInputFiles({
+    name: 'noise.png',
+    mimeType: 'image/png',
+    buffer: makeNoisePNG(293, 200),
+  })
+  await expect(modal.locator('.split-notice')).toHaveCount(0)
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    modal.getByRole('button', { name: '리사이즈 다운로드' }).click(),
+  ])
+  const fs = await import('node:fs')
+  const buf = fs.readFileSync((await download.path())!)
+  const generated = zipEntries(buf).filter(
+    (e) => e.name.endsWith('_Mobile.png') || e.name.endsWith('_PC.png'),
+  )
+  expect(generated.length).toBe(2)
+  for (const e of generated) {
+    expect(e.size, `${e.name} 가 50KB 미만이어야 함`).toBeLessThan(50 * 1024)
+  }
 })
 
 test('세로 이미지는 커버 불가 안내 + 다운로드 비활성', async ({ page }) => {

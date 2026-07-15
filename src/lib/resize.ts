@@ -54,7 +54,8 @@ async function renderTarget(
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, p.drawY, p.scaledW, p.scaledH)
-  return encodeCanvas(canvas, 'png')
+  // 무손실로 부족하면 손실 폴백으로 50KB 이하로 맞춘다.
+  return encodeCanvas(canvas, 'png', 0.92, 50 * 1024)
 }
 
 export interface ResizeImageResult {

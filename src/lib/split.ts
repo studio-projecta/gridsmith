@@ -62,6 +62,7 @@ export async function splitImage(
   sep: number,
   format: ImageFormat,
   quality = 0.92,
+  targetBytes?: number,
 ): Promise<SplitResult> {
   if (!Number.isInteger(cols) || !Number.isInteger(rows) || cols < 1 || rows < 1) {
     throw new Error('분할 수는 1 이상의 정수여야 합니다.')
@@ -89,7 +90,7 @@ export async function splitImage(
       // JPEG 는 알파가 없으므로 이전 셀의 잔상을 지우려 매 셀 클리어.
       ctx.clearRect(0, 0, cellW, cellH)
       ctx.drawImage(bitmap, sx, sy, cellW, cellH, 0, 0, cellW, cellH)
-      const { blob, rawSize } = await encodeCanvas(canvas, format, quality)
+      const { blob, rawSize } = await encodeCanvas(canvas, format, quality, targetBytes)
       rawBytes += rawSize
       optBytes += blob.size
       files.push({ name: `r${r + 1}c${c + 1}.${ext}`, blob })
@@ -118,6 +119,7 @@ export async function splitFiles(
   sep: number,
   format: ImageFormat,
   quality = 0.92,
+  targetBytes?: number,
 ): Promise<SplitResult> {
   const single = inputs.length === 1
   const seen = new Map<string, number>()
@@ -125,7 +127,7 @@ export async function splitFiles(
   let rawBytes = 0
   let optBytes = 0
   for (const input of inputs) {
-    const res = await splitImage(input.blob, cols, rows, sep, format, quality)
+    const res = await splitImage(input.blob, cols, rows, sep, format, quality, targetBytes)
     rawBytes += res.rawBytes
     optBytes += res.optBytes
     if (single) {
