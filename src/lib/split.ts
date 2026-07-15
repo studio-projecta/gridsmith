@@ -101,7 +101,7 @@ export async function splitImage(
 }
 
 // 확장자를 떼고 경로 구분자만 정리해 ZIP 폴더 이름으로 쓴다(한글·공백 유지).
-function folderBase(name: string): string {
+export function folderBase(name: string): string {
   const dot = name.lastIndexOf('.')
   const stem = dot > 0 ? name.slice(0, dot) : name
   return stem.replace(/[/\\]+/g, '_').trim() || 'image'

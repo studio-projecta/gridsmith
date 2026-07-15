@@ -5,6 +5,7 @@ import TypeSidebar from './components/TypeSidebar'
 import Workspace from './components/Workspace'
 import BackupControls from './components/BackupControls'
 import SplitButton from './components/SplitButton'
+import ResizeButton from './components/ResizeButton'
 
 export default function App() {
   const init = useStore((s) => s.init)
@@ -20,6 +21,7 @@ export default function App() {
         <span className="brand-mark" aria-hidden="true" />
         <h1>Gridsmith</h1>
         <SplitButton />
+        <ResizeButton />
         <BackupControls />
       </header>
 
