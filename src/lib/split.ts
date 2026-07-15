@@ -52,6 +52,8 @@ export interface SplitResult {
   // 최적화 전/후 총 바이트(모든 조각 합). PNG 최적화 절감량 표시에 쓴다.
   rawBytes: number
   optBytes: number
+  // 어느 한 조각이라도 손실 압축을 거쳤는가(목표 용량을 맞추려). 라벨 표시에 쓴다.
+  lossy: boolean
 }
 
 /** 이미지를 분할해 각 셀을 개별 Blob 으로 반환한다(행 우선 rNcM 명명). */
@@ -86,16 +88,18 @@ export async function splitImage(
     const files: SplitFile[] = []
     let rawBytes = 0
     let optBytes = 0
+    let lossy = false
     for (const { r, c, sx, sy } of geo.rects) {
       // JPEG 는 알파가 없으므로 이전 셀의 잔상을 지우려 매 셀 클리어.
       ctx.clearRect(0, 0, cellW, cellH)
       ctx.drawImage(bitmap, sx, sy, cellW, cellH, 0, 0, cellW, cellH)
-      const { blob, rawSize } = await encodeCanvas(canvas, format, quality, targetBytes)
-      rawBytes += rawSize
-      optBytes += blob.size
-      files.push({ name: `r${r + 1}c${c + 1}.${ext}`, blob })
+      const enc = await encodeCanvas(canvas, format, quality, targetBytes)
+      rawBytes += enc.rawSize
+      optBytes += enc.blob.size
+      lossy = lossy || enc.lossy
+      files.push({ name: `r${r + 1}c${c + 1}.${ext}`, blob: enc.blob })
     }
-    return { files, rawBytes, optBytes }
+    return { files, rawBytes, optBytes, lossy }
   } finally {
     bitmap.close()
   }
@@ -126,10 +130,12 @@ export async function splitFiles(
   const out: SplitFile[] = []
   let rawBytes = 0
   let optBytes = 0
+  let lossy = false
   for (const input of inputs) {
     const res = await splitImage(input.blob, cols, rows, sep, format, quality, targetBytes)
     rawBytes += res.rawBytes
     optBytes += res.optBytes
+    lossy = lossy || res.lossy
     if (single) {
       out.push(...res.files)
       continue
@@ -140,5 +146,5 @@ export async function splitFiles(
     if (n > 0) base = `${base}-${n}`
     for (const p of res.files) out.push({ name: `${base}/${p.name}`, blob: p.blob })
   }
-  return { files: out, rawBytes, optBytes }
+  return { files: out, rawBytes, optBytes, lossy }
 }

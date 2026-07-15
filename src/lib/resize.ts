@@ -43,7 +43,7 @@ export function isCoverable(srcW: number, srcH: number): boolean {
 async function renderTarget(
   bitmap: ImageBitmap,
   t: ResizeTarget,
-): Promise<{ blob: Blob; rawSize: number }> {
+): Promise<{ blob: Blob; rawSize: number; lossy: boolean }> {
   const p = computePlacement(bitmap.width, bitmap.height, t)
   const canvas = document.createElement('canvas')
   canvas.width = t.w
@@ -63,6 +63,8 @@ export interface ResizeImageResult {
   targets: { key: ResizeTarget['key']; blob: Blob }[]
   rawBytes: number
   optBytes: number
+  // 어느 한 규격이라도 손실 압축을 거쳤는가(50KB 를 맞추려).
+  lossy: boolean
 }
 
 /** 이미지 한 장을 모든 규격으로 렌더링해 PNG blob 을 반환한다. */
@@ -75,13 +77,15 @@ export async function resizeImage(file: Blob): Promise<ResizeImageResult> {
     const targets: { key: ResizeTarget['key']; blob: Blob }[] = []
     let rawBytes = 0
     let optBytes = 0
+    let lossy = false
     for (const t of RESIZE_TARGETS) {
-      const { blob, rawSize } = await renderTarget(bitmap, t)
+      const { blob, rawSize, lossy: targetLossy } = await renderTarget(bitmap, t)
       rawBytes += rawSize
       optBytes += blob.size
+      lossy = lossy || targetLossy
       targets.push({ key: t.key, blob })
     }
-    return { targets, rawBytes, optBytes }
+    return { targets, rawBytes, optBytes, lossy }
   } finally {
     bitmap.close()
   }
@@ -105,10 +109,12 @@ export async function resizeFiles(
   const out: SplitFile[] = []
   let rawBytes = 0
   let optBytes = 0
+  let lossy = false
   for (const input of inputs) {
     const res = await resizeImage(input.blob)
     rawBytes += res.rawBytes
     optBytes += res.optBytes
+    lossy = lossy || res.lossy
 
     let base = folderBase(input.name)
     const n = seen.get(base) ?? 0
@@ -122,5 +128,5 @@ export async function resizeFiles(
     }
     out.push({ name: `${folder}/${stem}_Weflab${extOf(input.name)}`, blob: input.blob })
   }
-  return { files: out, rawBytes, optBytes }
+  return { files: out, rawBytes, optBytes, lossy }
 }

@@ -69,6 +69,9 @@ test('가로 이미지 리사이즈 → Mobile/PC/원본 3개를 폴더로 묶�
   const { width, height } = firstPngSize(buf)
   expect(width).toBe(293)
   expect(height).toBe(248)
+
+  // 단색 이미지는 무손실(oxipng)로 목표 이하 → "무손실 최적화" 라벨.
+  await expect(modal.locator('.split-result')).toContainText('무손실 최적화')
 })
 
 test('여러 가로 이미지 → 파일별 폴더 6개 항목', async ({ page }) => {
@@ -120,6 +123,11 @@ test('노이즈 이미지도 손실 폴백으로 _Mobile/_PC 각 50KB 미만', a
   for (const e of generated) {
     expect(e.size, `${e.name} 가 50KB 미만이어야 함`).toBeLessThan(50 * 1024)
   }
+
+  // 손실 폴백을 거쳤으므로 "손실 최적화" 라벨(무손실 아님).
+  const label = modal.locator('.split-result')
+  await expect(label).toContainText('손실 최적화')
+  await expect(label).not.toContainText('무손실')
 })
 
 test('세로 이미지는 커버 불가 안내 + 다운로드 비활성', async ({ page }) => {

@@ -37,7 +37,9 @@ export default function SplitModal({ onClose }: Props) {
   const [sepStr, setSepStr] = useState('1')
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<{ rawBytes: number; optBytes: number } | null>(null)
+  const [result, setResult] = useState<{ rawBytes: number; optBytes: number; lossy: boolean } | null>(
+    null,
+  )
   const [dragging, setDragging] = useState(false)
   // 중첩 자식 위를 지날 때 dragenter/dragleave 가 번갈아 발생해 깜빡이므로 깊이를 센다.
   const dragDepth = useRef(0)
@@ -167,7 +169,7 @@ export default function SplitModal({ onClose }: Props) {
       const inputs = loaded.map((l) => ({ name: l.file.name, blob: l.file }))
       // 무손실로 부족하면 손실 폴백으로 조각당 200KB 이하로 맞춘다.
       const SPLIT_TARGET = 200 * 1024
-      const { files, rawBytes, optBytes } = await splitFiles(
+      const { files, rawBytes, optBytes, lossy } = await splitFiles(
         inputs,
         ratio[0],
         ratio[1],
@@ -178,7 +180,7 @@ export default function SplitModal({ onClose }: Props) {
       )
       const zip = await zipStore(files)
       downloadBlob(zip, `split-${ratio[0]}x${ratio[1]}.zip`)
-      setResult({ rawBytes, optBytes })
+      setResult({ rawBytes, optBytes, lossy })
     } catch (err) {
       alert(`분할 실패: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
@@ -347,10 +349,9 @@ export default function SplitModal({ onClose }: Props) {
         {result && (
           <p className="split-result">
             {result.optBytes < result.rawBytes
-              ? `무손실 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(result.optBytes)} (${(
-                  100 *
-                  (1 - result.optBytes / result.rawBytes)
-                ).toFixed(1)}% 감소)`
+              ? `${result.lossy ? '손실' : '무손실'} 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(
+                  result.optBytes,
+                )} (${(100 * (1 - result.optBytes / result.rawBytes)).toFixed(1)}% 감소)`
               : `총 용량: ${fmtBytes(result.optBytes)}`}
           </p>
         )}

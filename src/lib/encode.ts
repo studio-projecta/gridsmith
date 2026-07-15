@@ -7,6 +7,8 @@ export interface EncodeResult {
   blob: Blob
   // 최적화 전(canvas 원본) 바이트. 손실 폴백과 무관하게 절감 표시에 쓰인다.
   rawSize: number
+  // 목표 용량을 맞추려 손실 압축(양자화/품질 저하)을 적용했는가. 무손실(oxipng)만이면 false.
+  lossy: boolean
 }
 
 // oxipng 무손실 최적화 레벨(0-6). 6 은 최대 압축이며 가장 느리다.
@@ -49,33 +51,41 @@ export async function encodeCanvas(
   const rawSize = raw.size
 
   if (format !== 'png') {
-    if (!targetBytes || raw.size <= targetBytes) return { blob: raw, rawSize }
+    if (!targetBytes || raw.size <= targetBytes) return { blob: raw, rawSize, lossy: false }
     // JPEG 손실 폴백: 품질을 낮춰가며 첫 통과(없으면 가장 작은 것) 반환.
     let best = raw
+    let bestLossy = false
     for (const q of JPEG_QUALITY_STEPS) {
       const b = await toBlob(canvas, mime, q)
-      if (b.size < best.size) best = b
-      if (b.size <= targetBytes) return { blob: b, rawSize }
+      if (b.size < best.size) {
+        best = b
+        bestLossy = true
+      }
+      if (b.size <= targetBytes) return { blob: b, rawSize, lossy: true }
     }
-    return { blob: best, rawSize }
+    return { blob: best, rawSize, lossy: bestLossy }
   }
 
   const lossless = await optimisePng(raw)
-  if (!targetBytes || lossless.size <= targetBytes) return { blob: lossless, rawSize }
+  if (!targetBytes || lossless.size <= targetBytes) return { blob: lossless, rawSize, lossy: false }
 
   // PNG 손실 폴백: 색상 수를 낮춰가며 imagequant(디더링) 팔레트 PNG → oxipng.
   // 첫 통과(없으면 가장 작은 것) 반환.
   const ctx = canvas.getContext('2d')
-  if (!ctx) return { blob: lossless, rawSize }
+  if (!ctx) return { blob: lossless, rawSize, lossy: false }
   const src = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
   let best = lossless
+  let bestLossy = false
   for (const colors of QUANT_STEPS) {
     const png = await quantizePng(src.data, canvas.width, canvas.height, colors)
     // wasm 메모리 뷰일 수 있어 새 배열로 복사(BlobPart 타입도 만족).
     const opt = await optimisePng(new Blob([new Uint8Array(png)], { type: 'image/png' }))
-    if (opt.size < best.size) best = opt
-    if (opt.size <= targetBytes) return { blob: opt, rawSize }
+    if (opt.size < best.size) {
+      best = opt
+      bestLossy = true
+    }
+    if (opt.size <= targetBytes) return { blob: opt, rawSize, lossy: true }
   }
-  return { blob: best, rawSize }
+  return { blob: best, rawSize, lossy: bestLossy }
 }

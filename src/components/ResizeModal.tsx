@@ -30,6 +30,7 @@ export default function ResizeModal({ onClose }: Props) {
     rawBytes: number
     optBytes: number
     oversize: string[]
+    lossy: boolean
   } | null>(null)
   const [dragging, setDragging] = useState(false)
   // 중첩 자식 위를 지날 때 dragenter/dragleave 가 번갈아 발생해 깜빡이므로 깊이를 센다.
@@ -142,7 +143,7 @@ export default function ResizeModal({ onClose }: Props) {
     setBusy(true)
     try {
       const inputs = loaded.map((l) => ({ name: l.file.name, blob: l.file }))
-      const { files, rawBytes, optBytes } = await resizeFiles(inputs)
+      const { files, rawBytes, optBytes, lossy } = await resizeFiles(inputs)
       const oversize = files
         .filter((f) => f.name.endsWith('_Mobile.png') || f.name.endsWith('_PC.png'))
         .filter((f) => f.blob.size >= MAX_BYTES)
@@ -151,7 +152,7 @@ export default function ResizeModal({ onClose }: Props) {
       const zipName =
         loaded.length === 1 ? `${folderBase(loaded[0].file.name)}.zip` : 'weflab-thumbnails.zip'
       downloadBlob(zip, zipName)
-      setResult({ rawBytes, optBytes, oversize })
+      setResult({ rawBytes, optBytes, oversize, lossy })
     } catch (err) {
       alert(`리사이즈 실패: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
@@ -242,10 +243,9 @@ export default function ResizeModal({ onClose }: Props) {
           <>
             <p className="split-result">
               {result.optBytes < result.rawBytes
-                ? `무손실 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(result.optBytes)} (${(
-                    100 *
-                    (1 - result.optBytes / result.rawBytes)
-                  ).toFixed(1)}% 감소)`
+                ? `${result.lossy ? '손실' : '무손실'} 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(
+                    result.optBytes,
+                  )} (${(100 * (1 - result.optBytes / result.rawBytes)).toFixed(1)}% 감소)`
                 : `총 용량: ${fmtBytes(result.optBytes)}`}
             </p>
             {result.oversize.length > 0 && (
