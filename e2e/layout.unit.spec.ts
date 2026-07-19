@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { cellRect, imageRect, clamp, trimEmptyLines, type Rect } from '../src/lib/layout'
+import { cellRect, imageRect, clamp, scaleLayoutBy, trimEmptyLines, type Rect } from '../src/lib/layout'
 import { computeAutoOutput, reflowCells } from '../src/types'
 import type { GridLayout, CellSlot } from '../src/types'
 
@@ -223,5 +223,78 @@ test.describe('clamp', () => {
     expect(clamp(5, 0, 1)).toBe(1)
     expect(clamp(-2, -1, 1)).toBe(-1)
     expect(clamp(0.5, 0, 1)).toBe(0.5)
+  })
+})
+
+test.describe('scaleLayoutBy', () => {
+  const cellAspect = (L: GridLayout) => {
+    const c = cellRect(L, 0)
+    return c.w / c.h
+  }
+
+  test('여백 지정 시에도 스케일 후 셀 가로:세로 비율 보존(사이드 잘림 회귀)', () => {
+    // marginX 를 안 스케일하면 셀 비율이 틀어져 cover 클립량이 달라진다.
+    const L = layout({
+      rows: 2,
+      cols: 2,
+      gap: 20,
+      marginX: 50,
+      marginY: 10,
+      outputWidth: 400,
+      outputHeight: 400,
+    })
+    for (const factor of [0.5, 2, 3.7]) {
+      const scaled = scaleLayoutBy(L, factor)
+      expect(cellAspect(scaled)).toBeCloseTo(cellAspect(L), 5)
+    }
+  })
+
+  test('절대 px 필드를 factor 로 함께 스케일', () => {
+    const L = layout({
+      gap: 20,
+      marginX: 50,
+      marginY: 10,
+      cellPadX: 8,
+      cellPadY: 4,
+      borderWidth: 6,
+      outputWidth: 400,
+      outputHeight: 200,
+    })
+    const s = scaleLayoutBy(L, 2)
+    expect(s.outputWidth).toBe(800)
+    expect(s.outputHeight).toBe(400)
+    expect(s.gap).toBe(40)
+    expect(s.marginX).toBe(100)
+    expect(s.marginY).toBe(20)
+    expect(s.cellPadX).toBe(16)
+    expect(s.cellPadY).toBe(8)
+    expect(s.borderWidth).toBe(12)
+  })
+
+  test('미지정 여백은 undefined 로 유지(gap 폴백 보존)', () => {
+    const L = layout({ gap: 10, outputWidth: 400, outputHeight: 400 })
+    const s = scaleLayoutBy(L, 2)
+    expect(s.marginX).toBeUndefined()
+    expect(s.marginY).toBeUndefined()
+    expect(s.cellPadX).toBeUndefined()
+    expect(s.cellPadY).toBeUndefined()
+  })
+
+  test('셀별 transform.padX/Y 는 스케일, offset/scale 은 불변', () => {
+    const cells: (CellSlot | null)[] = [
+      { imageId: 'a', transform: { offsetX: 0.3, offsetY: -0.4, scale: 1.5, padX: 10, padY: 6 } },
+      null,
+      null,
+      null,
+    ]
+    const L = layout({ rows: 2, cols: 2, outputWidth: 400, outputHeight: 400, cells })
+    const s = scaleLayoutBy(L, 2)
+    const t = s.cells[0]!.transform
+    expect(t.padX).toBe(20)
+    expect(t.padY).toBe(12)
+    expect(t.offsetX).toBe(0.3)
+    expect(t.offsetY).toBe(-0.4)
+    expect(t.scale).toBe(1.5)
+    expect(s.cells[1]).toBeNull()
   })
 })

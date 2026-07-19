@@ -80,6 +80,32 @@ export function clamp(v: number, min: number, max: number): number {
 }
 
 /**
+ * 레이아웃을 factor 배로 균일 스케일한다. gap·바깥/안쪽 여백·테두리·셀별 여백은 모두 절대 px 라,
+ * 출력 크기와 같은 배율로 함께 스케일해야 셀 사각형(cellRect) 비율이 보존된다. 이 값들을 고정하면
+ * 비율이 틀어져 cover 클립량이 달라지고 이미지 사이드가 잘린다.
+ * offset(-1..1)/scale 은 크기 비의존값이라 스케일하지 않는다. undefined 여백은 유지해 gap 폴백을 보존한다.
+ */
+export function scaleLayoutBy(layout: GridLayout, factor: number): GridLayout {
+  const s = (v: number | undefined) => (v === undefined ? undefined : Math.round(v * factor))
+  return {
+    ...layout,
+    outputWidth: Math.round(layout.outputWidth * factor),
+    outputHeight: Math.round(layout.outputHeight * factor),
+    gap: Math.round(layout.gap * factor),
+    borderWidth: Math.round((layout.borderWidth ?? 0) * factor),
+    marginX: s(layout.marginX),
+    marginY: s(layout.marginY),
+    cellPadX: s(layout.cellPadX),
+    cellPadY: s(layout.cellPadY),
+    cells: layout.cells.map((c) =>
+      c
+        ? { ...c, transform: { ...c.transform, padX: s(c.transform.padX), padY: s(c.transform.padY) } }
+        : c,
+    ),
+  }
+}
+
+/**
  * 모든 칸이 빈 행/열을 제거해 그리드를 압축한다.
  * 셀 크기(cellW/cellH)는 유지하고 남은 행·열만큼 출력 크기를 다시 계산하므로,
  * 빈 여백이 사라지고 가로:세로 비율이 실제 배치에 맞게 재조정된다.

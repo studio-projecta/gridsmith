@@ -1,22 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { composeToBlob, downloadBlob } from '../lib/compose'
-import { clamp, trimEmptyLines } from '../lib/layout'
+import { clamp, scaleLayoutBy, trimEmptyLines } from '../lib/layout'
 import type { GridLayout } from '../types'
 
 const PREVIEW_LONG_EDGE = 320
 
-// 구성은 비율로 계산되고 gap 만 절대 px 라, gap 도 같은 배율로 스케일해야 균일(벡터) 확대가 된다.
 function scaleLayout(layout: GridLayout, longEdge: number): GridLayout {
   const base = Math.max(layout.outputWidth, layout.outputHeight)
-  const factor = longEdge / base
-  return {
-    ...layout,
-    outputWidth: Math.round(layout.outputWidth * factor),
-    outputHeight: Math.round(layout.outputHeight * factor),
-    gap: Math.round(layout.gap * factor),
-    borderWidth: Math.round((layout.borderWidth ?? 0) * factor),
-  }
+  return scaleLayoutBy(layout, longEdge / base)
 }
 
 interface Props {
@@ -73,15 +65,10 @@ export default function ExportModal({ onClose }: Props) {
   const ratio = base.outputWidth / base.outputHeight
   const outW = clamp(Number(wStr) || base.outputWidth, 1, 12000)
   const outH = clamp(Number(hStr) || base.outputHeight, 1, 12000)
-  // 전체를 균일 스케일. gap 만 절대 px 라 같은 배율로 함께 스케일(벡터 확대).
+  // 전체를 균일 스케일(gap·여백·테두리 등 절대 px 를 함께 스케일). 출력 크기는 표시·파일명과
+  // 일치하도록 입력값 그대로 둔다.
   const factor = outW / base.outputWidth
-  const scaled: GridLayout = {
-    ...base,
-    outputWidth: outW,
-    outputHeight: outH,
-    gap: Math.round(base.gap * factor),
-    borderWidth: Math.round((base.borderWidth ?? 0) * factor),
-  }
+  const scaled: GridLayout = { ...scaleLayoutBy(base, factor), outputWidth: outW, outputHeight: outH }
 
   const onWidth = (s: string) => {
     setWStr(s)
