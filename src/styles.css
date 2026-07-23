@@ -119,6 +119,12 @@ select {
   text-decoration: underline;
 }
 
+.footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ---- layout ---- */
 .layout {
   flex: 1;

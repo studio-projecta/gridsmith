@@ -48,7 +48,17 @@ export default function App() {
         >
           ☕ Support on Ko-fi
         </a>
-        <span>Gridsmith v{__APP_VERSION__}</span>
+        <span className="footer-meta">
+          <a
+            className="kofi-link"
+            href="https://github.com/studio-projecta/gridsmith"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Source
+          </a>
+          <span>Gridsmith v{__APP_VERSION__}</span>
+        </span>
       </footer>
       <Analytics />
     </div>
