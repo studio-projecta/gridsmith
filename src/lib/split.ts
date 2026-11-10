@@ -115,6 +115,7 @@ export function folderBase(name: string): string {
 /**
  * 여러 이미지를 같은 비율로 분할해 하나의 파일 목록으로 반환한다.
  * 2장 이상이면 원본 파일명 폴더로 묶어 조각을 담고(중복명은 -1,-2), 1장이면 평면 이름을 쓴다.
+ * includeOriginal 이면 각 이미지의 조각 뒤에 원본을 재인코딩 없이 원래 이름으로 함께 담는다.
  */
 export async function splitFiles(
   inputs: { name: string; blob: Blob }[],
@@ -124,6 +125,7 @@ export async function splitFiles(
   format: ImageFormat,
   quality = 0.92,
   targetBytes?: number,
+  includeOriginal = false,
 ): Promise<SplitResult> {
   const single = inputs.length === 1
   const seen = new Map<string, number>()
@@ -136,15 +138,26 @@ export async function splitFiles(
     rawBytes += res.rawBytes
     optBytes += res.optBytes
     lossy = lossy || res.lossy
+    const entries = [...res.files]
+    if (includeOriginal) {
+      // 경로 구분자가 ZIP 안에서 폴더로 해석되지 않게 정리한다.
+      let name = input.name.replace(/[/\\]+/g, '_')
+      // 조각과 같은 이름(r1c1.png 등)이면 같은 폴더에서 겹치므로 구분한다.
+      if (res.files.some((p) => p.name === name)) {
+        const dot = name.lastIndexOf('.')
+        name = dot > 0 ? `${name.slice(0, dot)}-original${name.slice(dot)}` : `${name}-original`
+      }
+      entries.push({ name, blob: input.blob })
+    }
     if (single) {
-      out.push(...res.files)
+      out.push(...entries)
       continue
     }
     let base = folderBase(input.name)
     const n = seen.get(base) ?? 0
     seen.set(base, n + 1)
     if (n > 0) base = `${base}-${n}`
-    for (const p of res.files) out.push({ name: `${base}/${p.name}`, blob: p.blob })
+    for (const p of entries) out.push({ name: `${base}/${p.name}`, blob: p.blob })
   }
   return { files: out, rawBytes, optBytes, lossy }
 }

@@ -36,6 +36,7 @@ export default function SplitModal({ onClose }: Props) {
   const [ratioStr, setRatioStr] = useState('2x3')
   const [sepStr, setSepStr] = useState('1')
   const [format, setFormat] = useState<'png' | 'jpeg'>('png')
+  const [includeOriginal, setIncludeOriginal] = useState(true)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ rawBytes: number; optBytes: number; lossy: boolean } | null>(
     null,
@@ -177,6 +178,7 @@ export default function SplitModal({ onClose }: Props) {
         format,
         0.92,
         SPLIT_TARGET,
+        includeOriginal,
       )
       const zip = await zipStore(files)
       downloadBlob(zip, `split-${ratio[0]}x${ratio[1]}.zip`)
@@ -309,6 +311,16 @@ export default function SplitModal({ onClose }: Props) {
             <option value="png">PNG</option>
             <option value="jpeg">JPEG</option>
           </select>
+        </div>
+        <div className="field">
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={includeOriginal}
+              onChange={(e) => setIncludeOriginal(e.target.checked)}
+            />
+            원본 포함
+          </label>
         </div>
 
         {loaded.length > 0 && !ratio && (
