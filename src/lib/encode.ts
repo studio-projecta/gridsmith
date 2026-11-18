@@ -28,7 +28,7 @@ function toBlob(canvas: HTMLCanvasElement, mime: string, quality: number): Promi
   )
 }
 
-async function optimisePng(blob: Blob): Promise<Blob> {
+export async function optimisePng(blob: Blob): Promise<Blob> {
   const optimised = await optimise(await blob.arrayBuffer(), { level: PNG_OPT_LEVEL })
   return new Blob([optimised], { type: 'image/png' })
 }

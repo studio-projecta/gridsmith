@@ -3,6 +3,8 @@ import { coversTarget, resizePair, type ResizeTarget } from '../lib/resize'
 import { folderBase } from '../lib/split'
 import { zipStore } from '../lib/zip'
 import { downloadBlob } from '../lib/compose'
+import { fmtBytes } from '../lib/format'
+import CompressPanel from './CompressPanel'
 
 interface Props {
   onClose: () => void
@@ -16,12 +18,6 @@ interface Loaded {
 }
 
 const MAX_BYTES = 50 * 1024
-
-function fmtBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`
-}
 
 // 한 슬롯(모바일/PC)의 파일 선택·드래그앤드롭·미리보기. 새 이미지를 놓으면 기존 것을 대체한다.
 function ImageSlot({
@@ -115,6 +111,7 @@ function specHint(key: ResizeTarget['key']): string {
 }
 
 export default function ResizeModal({ onClose }: Props) {
+  const [tab, setTab] = useState<'spec' | 'compress'>('spec')
   const [mobile, setMobile] = useState<Loaded | null>(null)
   const [pc, setPc] = useState<Loaded | null>(null)
   const [busy, setBusy] = useState(false)
@@ -207,56 +204,81 @@ export default function ResizeModal({ onClose }: Props) {
       <div className="modal split-modal" onClick={(e) => e.stopPropagation()}>
         <h3>이미지 리사이즈</h3>
 
-        <div className="resize-slots">
-          <ImageSlot
-            label="모바일용"
-            hint={specHint('Mobile')}
-            loaded={mobile}
-            notice={mobileNotice}
-            onPick={(f) => void pick('mobile', f)}
-            onClear={() => setSlot(setMobile, null)}
-          />
-          <ImageSlot
-            label="PC용"
-            hint={specHint('PC')}
-            loaded={pc}
-            notice={pcNotice}
-            onPick={(f) => void pick('pc', f)}
-            onClear={() => setSlot(setPc, null)}
-          />
+        <div className="split-presets">
+          <button
+            type="button"
+            className={'split-preset' + (tab === 'spec' ? ' active' : '')}
+            disabled={busy}
+            onClick={() => setTab('spec')}
+          >
+            규격 맞춤
+          </button>
+          <button
+            type="button"
+            className={'split-preset' + (tab === 'compress' ? ' active' : '')}
+            disabled={busy}
+            onClick={() => setTab('compress')}
+          >
+            용량 줄이기
+          </button>
         </div>
 
-        {result && (
+        {tab === 'compress' ? (
+          <CompressPanel busy={busy} setBusy={setBusy} onClose={onClose} />
+        ) : (
           <>
-            <p className="split-result">
-              {result.optBytes < result.rawBytes
-                ? `${result.lossy ? '손실' : '무손실'} 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(
-                    result.optBytes,
-                  )} (${(100 * (1 - result.optBytes / result.rawBytes)).toFixed(1)}% 감소)`
-                : `총 용량: ${fmtBytes(result.optBytes)}`}
-            </p>
-            {result.oversize.length > 0 && (
-              <p className="split-notice">
-                50KB 를 넘는 파일이 있어요:
-                <br />
-                {result.oversize.map((name) => (
-                  <span key={name} className="split-drop-line">
-                    {name}
-                  </span>
-                ))}
-              </p>
+            <div className="resize-slots">
+              <ImageSlot
+                label="모바일용"
+                hint={specHint('Mobile')}
+                loaded={mobile}
+                notice={mobileNotice}
+                onPick={(f) => void pick('mobile', f)}
+                onClear={() => setSlot(setMobile, null)}
+              />
+              <ImageSlot
+                label="PC용"
+                hint={specHint('PC')}
+                loaded={pc}
+                notice={pcNotice}
+                onPick={(f) => void pick('pc', f)}
+                onClear={() => setSlot(setPc, null)}
+              />
+            </div>
+
+            {result && (
+              <>
+                <p className="split-result">
+                  {result.optBytes < result.rawBytes
+                    ? `${result.lossy ? '손실' : '무손실'} 최적화: ${fmtBytes(result.rawBytes)} → ${fmtBytes(
+                        result.optBytes,
+                      )} (${(100 * (1 - result.optBytes / result.rawBytes)).toFixed(1)}% 감소)`
+                    : `총 용량: ${fmtBytes(result.optBytes)}`}
+                </p>
+                {result.oversize.length > 0 && (
+                  <p className="split-notice">
+                    50KB 를 넘는 파일이 있어요:
+                    <br />
+                    {result.oversize.map((name) => (
+                      <span key={name} className="split-drop-line">
+                        {name}
+                      </span>
+                    ))}
+                  </p>
+                )}
+              </>
             )}
+
+            <div className="modal-actions">
+              <button className="btn-ghost" onClick={onClose} disabled={busy}>
+                {result ? '닫기' : '취소'}
+              </button>
+              <button className="export-btn" disabled={busy || !valid} onClick={handleDownload}>
+                {busy ? '생성 중…' : '⬇ 리사이즈 다운로드'}
+              </button>
+            </div>
           </>
         )}
-
-        <div className="modal-actions">
-          <button className="btn-ghost" onClick={onClose} disabled={busy}>
-            {result ? '닫기' : '취소'}
-          </button>
-          <button className="export-btn" disabled={busy || !valid} onClick={handleDownload}>
-            {busy ? '생성 중…' : '⬇ 리사이즈 다운로드'}
-          </button>
-        </div>
       </div>
     </div>
   )

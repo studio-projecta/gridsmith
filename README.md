@@ -11,6 +11,8 @@ PNG/JPEG. Everything runs in the browser; images are never uploaded to a server.
 - **Drag modes** — rearrange (swap cells) or fine-tune (offset/scale within a cell).
 - **Split** — cut one image into `cols × rows` tiles, discarding separator lines.
 - **Resize** — scale images to fixed web-delivery specs (Mobile / PC variants).
+- **Compress** — shrink PNGs of any size without changing their dimensions: lossless
+  (pixel-identical) or size-first (256-color palette). Batch input, ZIP output.
 - **Size-optimized export** — lossless PNG via oxipng, with a lossy fallback
   (palette quantization for PNG, quality steps for JPEG) to hit a target file size.
 - **Backup / restore** — export and re-import the full workspace as a single ZIP.
